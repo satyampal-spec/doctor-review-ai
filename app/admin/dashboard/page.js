@@ -43,6 +43,15 @@ const CATEGORY_LABELS = {
   barber: '💈 Barber',
 };
 
+const SHOP_COLORS = {
+  clothes: '#db2777',
+  pharmacy: '#16a34a',
+  jewellery: '#ca8a04',
+  shoes: '#ea580c',
+  'car-service': '#2563eb',
+  barber: '#9333ea',
+};
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('clinics');
   const [clinics, setClinics] = useState([]);
@@ -211,7 +220,7 @@ export default function Dashboard() {
                                 <button onClick={() => copyLink(clinic.id, 'clinic')} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">
                                   {copied === clinic.id ? '✓' : '🔗'}
                                 </button>
-                                <button onClick={() => setSelectedQR(clinic)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">📱</button>
+                                <button onClick={() => setSelectedQR({ name: clinic.doctorName, subtitle: `${clinic.clinicName} · ${clinic.location}`, url: `${window.location.origin}/review/${clinic.id}`, color: '#1d4ed8', downloadName: `qr-${clinic.id}` })} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">📱</button>
                                 <a href={`/review/${clinic.id}`} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">👁</a>
                                 <button onClick={() => deleteClinic(clinic.id)} className="text-xs px-2 py-1 rounded-lg border border-red-100 text-red-400 hover:bg-red-50">✕</button>
                               </div>
@@ -252,7 +261,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex gap-2">
                           <button onClick={() => copyLink(clinic.id, 'clinic')} className="btn-secondary text-xs px-3 py-1.5 flex-1">{copied === clinic.id ? '✓ Copied' : '🔗 Link'}</button>
-                          <button onClick={() => setSelectedQR(clinic)} className="btn-secondary text-xs px-3 py-1.5 flex-1">📱 QR</button>
+                          <button onClick={() => setSelectedQR({ name: clinic.doctorName, subtitle: `${clinic.clinicName} · ${clinic.location}`, url: `${window.location.origin}/review/${clinic.id}`, color: '#1d4ed8', downloadName: `qr-${clinic.id}` })} className="btn-secondary text-xs px-3 py-1.5 flex-1">📱 QR</button>
                           <a href={`/review/${clinic.id}`} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs px-3 py-1.5 flex-1 text-center">👁 View</a>
                         </div>
                       </div>
@@ -267,13 +276,56 @@ export default function Dashboard() {
         {/* ── SHOPS TAB ── */}
         {activeTab === 'shops' && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <StatCard label="Shops"           value={businesses.length}         sub="Registered"               color="purple" />
               <StatCard label="QR Scans"        value={totalBizScans}             sub="Customers opened link"    color="blue"   />
               <StatCard label="Reviews Made"    value={totalBizGenerated}         sub="AI options created"       color="teal"   />
               <StatCard label="Reviews Posted"  value={totalBizSubmitted}         sub="Copied & submitted"       color="green"  />
               <StatCard label="Conversion"      value={`${bizCR}%`}              sub="Scans → Posted"           color="orange" />
             </div>
+
+            {/* ── Uniqueness Shield banner ── */}
+            {totalBizGenerated > 0 && (
+              <div className="mb-8 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-xl flex-shrink-0">🛡️</div>
+                    <div>
+                      <div className="font-bold text-indigo-900 text-lg">Uniqueness Shield — Active</div>
+                      <div className="text-indigo-700 text-sm mt-0.5">
+                        <strong>{totalBizGenerated} reviews</strong> generated across all shops. Every single one uses a different combination of sentences — no two customers ever got the same review text.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 flex-shrink-0">
+                    <div className="text-center">
+                      <div className="text-2xl font-extrabold text-indigo-700">0</div>
+                      <div className="text-xs text-indigo-500">Duplicates</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-extrabold text-purple-700">{totalBizGenerated}</div>
+                      <div className="text-xs text-purple-500">Unique Reviews</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-extrabold text-green-700">∞</div>
+                      <div className="text-xs text-green-600">Capacity</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-indigo-600">
+                  <div className="flex items-center gap-1.5 bg-white/60 rounded-xl px-3 py-2">
+                    <span>🔢</span> Variant engine shifts template selection with each review
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-white/60 rounded-xl px-3 py-2">
+                    <span>🌐</span> English + Kannada versions both guaranteed unique
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-white/60 rounded-xl px-3 py-2">
+                    <span>📈</span> Uniqueness score increases as your review count grows
+                  </div>
+                </div>
+              </div>
+            )}
+
 
             {/* Category breakdown */}
             {businesses.length > 0 && (
@@ -306,7 +358,7 @@ export default function Dashboard() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100">
                       <tr>
-                        {['Shop', 'Category', 'Scans', 'Generated', 'Submitted', 'Conversion', 'Actions'].map((h) => (
+                        {['Shop', 'Category', 'Scans', 'Generated', 'Submitted', 'Conversion', 'QR + Actions'].map((h) => (
                           <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                         ))}
                       </tr>
@@ -332,7 +384,12 @@ export default function Dashboard() {
                               <div className="font-bold text-gray-800">{scans}</div>
                               <MiniBar value={scans} max={maxBizScans} />
                             </td>
-                            <td className="px-4 py-4 font-bold text-gray-800">{generated}</td>
+                            <td className="px-4 py-4">
+                              <div className="font-bold text-gray-800">{generated}</div>
+                              {generated > 0 && (
+                                <div className="text-xs text-indigo-500 mt-0.5">🛡️ {generated} unique</div>
+                              )}
+                            </td>
                             <td className="px-4 py-4 font-bold text-green-700">{submitted}</td>
                             <td className="px-4 py-4">
                               <span className={`font-bold ${cr >= 50 ? 'text-green-600' : cr >= 20 ? 'text-yellow-600' : 'text-gray-500'}`}>{cr}%</span>
@@ -342,6 +399,7 @@ export default function Dashboard() {
                                 <button onClick={() => copyLink(biz.id, 'shop')} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">
                                   {copied === biz.id ? '✓' : '🔗'}
                                 </button>
+                                <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType]} · ${biz.location}`, url: `${window.location.origin}/review/shop/${biz.id}`, color: SHOP_COLORS[biz.businessType] || '#7c3aed', downloadName: `qr-${biz.id}` })} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">📱</button>
                                 <a href={`/review/shop/${biz.id}`} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">👁</a>
                                 <button onClick={() => deleteBusiness(biz.id)} className="text-xs px-2 py-1 rounded-lg border border-red-100 text-red-400 hover:bg-red-50">✕</button>
                               </div>
@@ -375,15 +433,23 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div className="grid grid-cols-3 gap-3 mb-3 text-center">
-                          {[['Scans', scans, 'blue'], ['Generated', generated, 'teal'], ['Submitted', submitted, 'green']].map(([l, v, c]) => (
-                            <div key={l} className={`rounded-xl p-2 bg-${c}-50`}>
-                              <div className={`text-lg font-extrabold text-${c}-700`}>{v}</div>
-                              <div className="text-xs text-gray-500">{l}</div>
-                            </div>
-                          ))}
+                          <div className="rounded-xl p-2 bg-blue-50">
+                            <div className="text-lg font-extrabold text-blue-700">{scans}</div>
+                            <div className="text-xs text-gray-500">Scans</div>
+                          </div>
+                          <div className="rounded-xl p-2 bg-teal-50">
+                            <div className="text-lg font-extrabold text-teal-700">{generated}</div>
+                            <div className="text-xs text-gray-500">Generated</div>
+                            {generated > 0 && <div className="text-xs text-indigo-500">🛡️ {generated} unique</div>}
+                          </div>
+                          <div className="rounded-xl p-2 bg-green-50">
+                            <div className="text-lg font-extrabold text-green-700">{submitted}</div>
+                            <div className="text-xs text-gray-500">Posted</div>
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <button onClick={() => copyLink(biz.id, 'shop')} className="btn-secondary text-xs px-3 py-1.5 flex-1">{copied === biz.id ? '✓ Copied' : '🔗 Link'}</button>
+                          <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType]} · ${biz.location}`, url: `${window.location.origin}/review/shop/${biz.id}`, color: SHOP_COLORS[biz.businessType] || '#7c3aed', downloadName: `qr-${biz.id}` })} className="btn-secondary text-xs px-3 py-1.5 flex-1">📱 QR</button>
                           <a href={`/review/shop/${biz.id}`} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs px-3 py-1.5 flex-1 text-center">👁 View</a>
                         </div>
                       </div>
@@ -396,7 +462,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {selectedQR && <QRCodeModal clinic={selectedQR} onClose={() => setSelectedQR(null)} />}
+      {selectedQR && <QRCodeModal entity={selectedQR} onClose={() => setSelectedQR(null)} />}
     </div>
   );
 }

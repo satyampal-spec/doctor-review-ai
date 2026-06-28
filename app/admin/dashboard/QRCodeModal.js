@@ -2,30 +2,32 @@
 
 import { useEffect, useRef } from 'react';
 
-export default function QRCodeModal({ clinic, onClose }) {
+// entity = { name, subtitle, url, color, downloadName }
+export default function QRCodeModal({ entity, onClose }) {
   const canvasRef = useRef(null);
-  const reviewUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/review/${clinic.id}`;
+  const { name, subtitle, url, color = '#1d4ed8', downloadName = 'qr' } = entity || {};
 
   useEffect(() => {
+    if (!url) return;
     let cancelled = false;
     async function drawQR() {
       const QRCode = (await import('qrcode')).default;
       if (cancelled || !canvasRef.current) return;
-      await QRCode.toCanvas(canvasRef.current, reviewUrl, {
+      await QRCode.toCanvas(canvasRef.current, url, {
         width: 240,
         margin: 2,
-        color: { dark: '#1d4ed8', light: '#ffffff' },
+        color: { dark: color, light: '#ffffff' },
       });
     }
     drawQR();
     return () => { cancelled = true; };
-  }, [reviewUrl]);
+  }, [url, color]);
 
   const downloadQR = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const link = document.createElement('a');
-    link.download = `qr-${clinic.id}.png`;
+    link.download = `${downloadName}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
@@ -39,17 +41,18 @@ export default function QRCodeModal({ clinic, onClose }) {
         className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-xl font-bold text-gray-900 mb-1">{clinic.doctorName}</h3>
-        <p className="text-gray-500 text-sm mb-6">{clinic.clinicName} · {clinic.location}</p>
+        <h3 className="text-xl font-bold text-gray-900 mb-1">{name}</h3>
+        <p className="text-gray-500 text-sm mb-6">{subtitle}</p>
 
         <div className="flex justify-center mb-4">
-          <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+          <div className="p-4 rounded-2xl border" style={{ background: `${color}15`, borderColor: `${color}30` }}>
             <canvas ref={canvasRef} />
           </div>
         </div>
 
+        <p className="text-xs text-gray-400 mb-2 font-mono break-all">{url}</p>
         <p className="text-xs text-gray-400 mb-6">
-          Print this and place it at your reception counter or on the doctor's desk.
+          Print this QR and place it at your counter — customers scan to leave a Google review.
         </p>
 
         <div className="flex gap-3">

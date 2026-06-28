@@ -73,6 +73,7 @@ export default function ShopReviewPage({ params }) {
 
   const [reviews, setReviews] = useState(null);
   const [scores, setScores] = useState(null);
+  const [reviewVariant, setReviewVariant] = useState(0);
   const [activeLang, setActiveLang] = useState('english');
   const [copied, setCopied] = useState('');
 
@@ -102,6 +103,14 @@ export default function ShopReviewPage({ params }) {
     setLoading(true);
     setTimeout(async () => {
       try {
+        // Re-fetch latest reviews_generated so the variant is always current
+        const { data: fresh } = await supabase
+          .from('businesses')
+          .select('reviews_generated')
+          .eq('id', shopId)
+          .single();
+        const currentVariant = fresh?.reviews_generated || shop.stats.reviewsGenerated || 0;
+
         const result = generateShopReview({
           shopName: shop.shopName,
           ownerName: shop.ownerName,
@@ -111,12 +120,15 @@ export default function ShopReviewPage({ params }) {
           rating,
           liked,
           duration,
+          variant: currentVariant, // ← seeds the template engine
         });
         setReviews(result.reviews);
         setScores(result.scores);
+        setReviewVariant(currentVariant + 1); // what this review counts as
+
         await supabase
           .from('businesses')
-          .update({ reviews_generated: (shop.stats.reviewsGenerated || 0) + 1 })
+          .update({ reviews_generated: currentVariant + 1 })
           .eq('id', shopId);
       } catch {
         alert('Something went wrong. Please try again.');
@@ -171,6 +183,11 @@ export default function ShopReviewPage({ params }) {
             <div className="text-4xl mb-2">✨</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Your Reviews Are Ready!</h1>
             <p className="text-gray-500 text-sm">Pick a language → choose a review → copy it → it opens Google automatically.</p>
+            {reviewVariant > 0 && (
+              <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-xs text-indigo-700 font-medium">
+                🔄 Unique review #{reviewVariant} generated for {shop.shopName}
+              </div>
+            )}
           </div>
 
           {scores && (

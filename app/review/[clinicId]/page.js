@@ -77,6 +77,7 @@ export default function ReviewPage({ params }) {
 
   const [reviews, setReviews] = useState(null);
   const [scores, setScores] = useState(null);
+  const [reviewVariant, setReviewVariant] = useState(0);
   const [activeLang, setActiveLang] = useState('english');
   const [copied, setCopied] = useState('');
 
@@ -97,6 +98,13 @@ export default function ReviewPage({ params }) {
     setLoading(true);
     setTimeout(async () => {
       try {
+        const { data: fresh } = await supabase
+          .from('clinics')
+          .select('reviews_generated')
+          .eq('id', clinicId)
+          .single();
+        const currentVariant = fresh?.reviews_generated || clinic?.stats?.reviewsGenerated || 0;
+
         const result = generateReview({
           doctorName: clinic.doctorName,
           clinicName: clinic.clinicName,
@@ -105,10 +113,16 @@ export default function ReviewPage({ params }) {
           rating,
           liked,
           duration,
+          variant: currentVariant,
         });
         setReviews(result.reviews);
         setScores(result.scores);
-        supabase.from('clinics').update({ reviews_generated: (clinic?.stats?.reviewsGenerated || 0) + 1 }).eq('id', clinicId);
+        setReviewVariant(currentVariant + 1);
+
+        await supabase
+          .from('clinics')
+          .update({ reviews_generated: currentVariant + 1 })
+          .eq('id', clinicId);
       } catch {
         alert('Something went wrong. Please try again.');
       } finally {
@@ -163,6 +177,11 @@ export default function ReviewPage({ params }) {
             <div className="text-4xl mb-2">✨</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Your Reviews Are Ready!</h1>
             <p className="text-gray-500 text-sm">Pick a language → choose a review → copy it → it opens Google automatically.</p>
+            {reviewVariant > 0 && (
+              <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700 font-medium">
+                🔄 Unique review #{reviewVariant} generated for {clinic?.clinicName}
+              </div>
+            )}
           </div>
 
           {/* AI Quality Scores */}
