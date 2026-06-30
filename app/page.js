@@ -27,6 +27,7 @@ const features = [
 
 const categories = [
   { emoji: '🏥', label: 'Doctors & Clinics',    href: '/admin',      color: 'from-blue-500 to-blue-600' },
+  { emoji: '🍽️', label: 'Restaurants',           href: '/admin/shop', color: 'from-red-500 to-red-600' },
   { emoji: '👗', label: 'Clothes Shops',          href: '/admin/shop', color: 'from-pink-500 to-pink-600' },
   { emoji: '💊', label: 'Pharmacies',             href: '/admin/shop', color: 'from-green-500 to-green-600' },
   { emoji: '💍', label: 'Jewellery Shops',        href: '/admin/shop', color: 'from-yellow-500 to-yellow-600' },

@@ -41,6 +41,7 @@ const CATEGORY_LABELS = {
   shoes: '👟 Shoes',
   'car-service': '🚗 Car Service',
   barber: '💈 Barber',
+  restaurant: '🍽️ Restaurant',
 };
 
 const SHOP_COLORS = {
@@ -50,6 +51,7 @@ const SHOP_COLORS = {
   shoes: '#ea580c',
   'car-service': '#2563eb',
   barber: '#9333ea',
+  restaurant: '#dc2626',
 };
 
 export default function Dashboard() {
