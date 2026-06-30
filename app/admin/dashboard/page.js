@@ -403,6 +403,7 @@ export default function Dashboard() {
                                 </button>
                                 <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType]} · ${biz.location}`, url: `${window.location.origin}/review/shop/${biz.id}`, color: SHOP_COLORS[biz.businessType] || '#7c3aed', downloadName: `qr-${biz.id}` })} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">📱</button>
                                 <a href={`/review/shop/${biz.id}`} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">👁</a>
+                                <a href={`/admin/website/${biz.id}`} className="text-xs px-2 py-1 rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50">🌐</a>
                                 <button onClick={() => deleteBusiness(biz.id)} className="text-xs px-2 py-1 rounded-lg border border-red-100 text-red-400 hover:bg-red-50">✕</button>
                               </div>
                             </td>
@@ -453,6 +454,7 @@ export default function Dashboard() {
                           <button onClick={() => copyLink(biz.id, 'shop')} className="btn-secondary text-xs px-3 py-1.5 flex-1">{copied === biz.id ? '✓ Copied' : '🔗 Link'}</button>
                           <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType]} · ${biz.location}`, url: `${window.location.origin}/review/shop/${biz.id}`, color: SHOP_COLORS[biz.businessType] || '#7c3aed', downloadName: `qr-${biz.id}` })} className="btn-secondary text-xs px-3 py-1.5 flex-1">📱 QR</button>
                           <a href={`/review/shop/${biz.id}`} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs px-3 py-1.5 flex-1 text-center">👁 View</a>
+                          <a href={`/admin/website/${biz.id}`} className="text-xs px-3 py-1.5 flex-1 text-center rounded-xl border border-emerald-200 text-emerald-600 bg-emerald-50 font-semibold hover:bg-emerald-100 transition-all">🌐 Site</a>
                         </div>
                       </div>
                     );
