@@ -229,28 +229,39 @@ export default function BusinessSite({ params }) {
         .lightbox img { max-width:95vw; max-height:92vh; object-fit:contain; border-radius:8px; box-shadow:0 32px 80px rgba(0,0,0,0.6); }
         .lb-close { position:absolute; top:18px; right:22px; font-size:32px; color:#fff; cursor:pointer; line-height:1; opacity:0.8; background:none; border:none; }
         .lb-close:hover { opacity:1; }
+        /* Nav desktop/mobile control */
+        .nav-desktop { display:flex; }
+        .nav-mobile-toggle { display:none; }
         /* ── Mobile overrides ── */
-        @media (max-width: 640px) {
+        @media (max-width: 767px) {
+          .nav-desktop { display:none !important; }
+          .nav-mobile-toggle { display:block !important; }
+          .nav-brand {
+            font-size: 14px !important;
+            max-width: 55vw !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
           .hero-section { min-height: 100svh !important; }
           .hero-content { padding: 100px 20px 60px !important; }
-          .hero-title { font-size: 2.2rem !important; letter-spacing: -0.02em !important; }
+          .hero-title { font-size: 2rem !important; letter-spacing: -0.02em !important; }
           .hero-sub { font-size: 1rem !important; }
           .hero-btns { flex-direction: column !important; align-items: stretch !important; }
           .hero-btns button { width: 100% !important; justify-content: center !important; }
           .about-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
           .about-img { height: 260px !important; }
           .about-year-badge { width:80px !important; height:80px !important; bottom:-12px !important; right:-8px !important; font-size:16px !important; }
-          .section-pad { padding: 64px 18px !important; }
-          .section-h2 { font-size: 1.7rem !important; }
+          .section-pad { padding: 60px 18px !important; }
+          .section-h2 { font-size: 1.6rem !important; }
           .gallery-grid { grid-template-columns: 1fr 1fr !important; }
           .gallery-hero { grid-column: span 2 !important; aspect-ratio: 16/9 !important; }
           .services-grid { grid-template-columns: 1fr !important; }
           .menu-grid { grid-template-columns: 1fr !important; }
           .highlights-grid { grid-template-columns: 1fr !important; }
-          .cta-h2 { font-size: 1.8rem !important; }
-          .cta-btn { padding: 16px 28px !important; font-size: 16px !important; }
-          .timings-pad { padding: 28px 20px !important; }
-          .nav-brand { font-size: 15px !important; }
+          .cta-h2 { font-size: 1.7rem !important; }
+          .cta-btn { padding: 14px 24px !important; font-size: 15px !important; }
+          .timings-pad { padding: 24px 18px !important; }
         }
       `}</style>
 
@@ -274,7 +285,7 @@ export default function BusinessSite({ params }) {
             {biz.shop_name}
           </span>
           {/* Desktop nav */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 28 }} className="hidden md:flex">
+          <div className="nav-desktop" style={{ alignItems: 'center', gap: 28 }}>
             {navItems.map((n) => (
               <button key={n.id} onClick={() => scrollTo(n.id)} className="nav-link text-sm font-semibold transition-all"
                 style={{ color: navScrolled ? '#374151' : 'rgba(255,255,255,0.9)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
@@ -288,7 +299,7 @@ export default function BusinessSite({ params }) {
             </button>
           </div>
           {/* Mobile menu toggle */}
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden" style={{ background: 'none', border: 'none', fontSize: 22, color: navScrolled ? '#111' : '#fff', cursor: 'pointer' }}>
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="nav-mobile-toggle" style={{ background: 'none', border: 'none', fontSize: 22, color: navScrolled ? '#111' : '#fff', cursor: 'pointer' }}>
             {mobileOpen ? '✕' : '☰'}
           </button>
         </div>
