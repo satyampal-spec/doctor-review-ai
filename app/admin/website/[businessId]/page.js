@@ -129,7 +129,9 @@ export default function WebsiteBuilderPage({ params }) {
     const ext = file.name.split('.').pop();
     const path = `${businessId}_gallery_${idx}_${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from('site-gallery').upload(path, file, { upsert: true });
-    if (!error) {
+    if (error) {
+      alert('Upload failed: ' + error.message + '\n\nMake sure you created the "site-gallery" bucket in Supabase Storage → New bucket → Public ON');
+    } else {
       const { data } = supabase.storage.from('site-gallery').getPublicUrl(path);
       const newUrls = [...galleryUrls];
       newUrls[idx] = data.publicUrl;
@@ -417,24 +419,43 @@ export default function WebsiteBuilderPage({ params }) {
         {/* Gallery */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <SectionLabel>Photo Gallery</SectionLabel>
-          <p className="text-xs text-gray-400 mb-5">First photo = hero background. Up to 6 photos. Drag & drop or tap each slot.</p>
+          <p className="text-xs text-gray-400 mb-5">First photo = hero background. Up to 6 photos. Tap each slot to upload.</p>
+          {/* Single hidden file input used for all slots */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file && fileInputRef.current?._slot !== undefined) {
+                uploadPhoto(file, fileInputRef.current._slot);
+              }
+              e.target.value = '';
+            }}
+          />
           <div className="grid grid-cols-3 gap-3">
             {[0, 1, 2, 3, 4, 5].map((idx) => {
               const url = galleryUrls[idx];
               return (
-                <div key={idx}
-                  className="relative aspect-square rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden cursor-pointer hover:border-purple-300 transition-all group"
-                  onClick={() => {
-                    const inp = document.createElement('input');
-                    inp.type = 'file'; inp.accept = 'image/*';
-                    inp.onchange = (e) => { if (e.target.files[0]) uploadPhoto(e.target.files[0], idx); };
-                    inp.click();
-                  }}>
+                <label key={idx} htmlFor={`gallery-slot-${idx}`}
+                  className="relative aspect-square rounded-2xl border-2 border-dashed border-gray-200 overflow-hidden cursor-pointer hover:border-purple-300 transition-all group block">
+                  <input
+                    id={`gallery-slot-${idx}`}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) uploadPhoto(file, idx);
+                      e.target.value = '';
+                    }}
+                  />
                   {url ? (
                     <>
                       <img src={url} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
-                        <button onClick={(e) => { e.stopPropagation(); removePhoto(idx); }}
+                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); removePhoto(idx); }}
                           className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-full bg-white text-red-500 font-bold text-sm transition-all flex items-center justify-center">✕</button>
                       </div>
                       {idx === 0 && (
@@ -443,7 +464,7 @@ export default function WebsiteBuilderPage({ params }) {
                     </>
                   ) : uploadingIdx === idx ? (
                     <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-8 h-8 border-3 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+                      <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
                     </div>
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-300">
@@ -451,7 +472,7 @@ export default function WebsiteBuilderPage({ params }) {
                       <span className="text-xs">{idx === 0 ? 'Hero photo' : `Photo ${idx + 1}`}</span>
                     </div>
                   )}
-                </div>
+                </label>
               );
             })}
           </div>
