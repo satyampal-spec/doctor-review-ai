@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { CATEGORY_CONFIG } from '@/lib/shopReviewGenerator';
@@ -20,10 +20,21 @@ export default function AddShopPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   const set = (key, val) => {
     setForm((f) => ({ ...f, [key]: val }));
     setErrors((e) => ({ ...e, [key]: '' }));
+  };
+
+  const handlePhotoChange = (file) => {
+    if (!file) return;
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setPhotoPreview(e.target.result);
+    reader.readAsDataURL(file);
   };
 
   const selectedConfig = form.businessType ? CATEGORY_CONFIG[form.businessType] : null;
@@ -44,6 +55,20 @@ export default function AddShopPage() {
     setSubmitting(true);
     const id = 'shop_' + Math.random().toString(36).substring(2, 10);
 
+    // Upload photo if selected
+    let photoUrl = null;
+    if (photoFile) {
+      const ext = photoFile.name.split('.').pop();
+      const filePath = `${id}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('shop-photos')
+        .upload(filePath, photoFile, { upsert: true });
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from('shop-photos').getPublicUrl(filePath);
+        photoUrl = urlData.publicUrl;
+      }
+    }
+
     const row = {
       id,
       shop_name: form.shopName.trim(),
@@ -53,6 +78,7 @@ export default function AddShopPage() {
       location: form.location.trim(),
       google_profile_url: form.googleProfileUrl.trim() || null,
       website_url: form.websiteUrl.trim() || null,
+      photo_url: photoUrl,
       scans: 0,
       reviews_generated: 0,
       reviews_submitted: 0,
@@ -203,6 +229,44 @@ export default function AddShopPage() {
                 {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
               </div>
             </div>
+          </div>
+
+          {/* Shop Photo */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Shop Photo (Optional)</h3>
+            <p className="text-xs text-gray-400 mb-3">Shown on the customer review page — makes your listing look premium and trustworthy.</p>
+            {photoPreview ? (
+              <div className="relative rounded-2xl overflow-hidden mb-3 border-2 border-purple-200">
+                <img src={photoPreview} alt="Shop preview" className="w-full h-40 object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                  <span className="bg-white/90 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">✓ Photo selected</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white text-xs font-bold flex items-center justify-center hover:bg-black/70 transition-all"
+                >✕</button>
+              </div>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f?.type.startsWith('image/')) handlePhotoChange(f); }}
+                className="border-2 border-dashed border-purple-200 rounded-2xl p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/50 transition-all"
+              >
+                <div className="text-3xl mb-2">📸</div>
+                <p className="text-sm font-semibold text-gray-600">Tap to upload shop photo</p>
+                <p className="text-xs text-gray-400 mt-1">Drag & drop or click · JPG, PNG, WEBP</p>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handlePhotoChange(e.target.files[0])}
+            />
           </div>
 
           {/* Links */}

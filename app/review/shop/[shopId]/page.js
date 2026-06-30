@@ -5,40 +5,36 @@ import { generateShopReview, CATEGORY_CONFIG } from '@/lib/shopReviewGenerator';
 import { supabase } from '@/lib/supabase';
 
 const RATING_OPTIONS = [
-  { key: 'excellent', label: 'Excellent', emoji: '😍', stars: 5 },
-  { key: 'good',      label: 'Good',      emoji: '😊', stars: 4 },
-  { key: 'average',   label: 'Average',   emoji: '😐', stars: 3 },
+  { key: 'excellent', label: 'Excellent', emoji: '😍', stars: 5, desc: 'Loved everything!' },
+  { key: 'good',      label: 'Good',      emoji: '😊', stars: 4, desc: 'Had a great experience' },
+  { key: 'average',   label: 'Average',   emoji: '😐', stars: 3, desc: 'It was okay' },
 ];
 
 const LANG_TABS = [
-  { key: 'english', label: 'English',         flag: '🇬🇧' },
-  { key: 'kannada', label: 'Kannada (Roman)',  flag: '🌟' },
+  { key: 'english', label: 'English',        flag: '🇬🇧' },
+  { key: 'kannada', label: 'Kannada (Roman)', flag: '🌟' },
 ];
 
 const REVIEW_TYPES = [
-  { key: 'short',    label: 'Short',    words: '30–50 words',   color: 'border-teal-200 bg-teal-50',     badge: 'bg-teal-100 text-teal-700' },
-  { key: 'medium',   label: 'Medium',   words: '70–100 words',  color: 'border-blue-200 bg-blue-50',     badge: 'bg-blue-100 text-blue-700' },
-  { key: 'detailed', label: 'Detailed', words: '100–150 words', color: 'border-indigo-200 bg-indigo-50', badge: 'bg-indigo-100 text-indigo-700' },
+  { key: 'short',    label: 'Short',    words: '30–50 words',   emoji: '⚡' },
+  { key: 'medium',   label: 'Medium',   words: '70–100 words',  emoji: '✨' },
+  { key: 'detailed', label: 'Detailed', words: '100–150 words', emoji: '📝' },
 ];
 
-function Stars({ count }) {
-  return <span className="text-yellow-400">{'★'.repeat(count)}{'☆'.repeat(5 - count)}</span>;
-}
+const THEMES = {
+  clothes:       { primary: '#db2777', gradient: 'linear-gradient(135deg,#db2777 0%,#be185d 100%)', light: '#fdf2f8', ring: '#f9a8d4' },
+  pharmacy:      { primary: '#16a34a', gradient: 'linear-gradient(135deg,#16a34a 0%,#15803d 100%)', light: '#f0fdf4', ring: '#86efac' },
+  jewellery:     { primary: '#d97706', gradient: 'linear-gradient(135deg,#d97706 0%,#b45309 100%)', light: '#fffbeb', ring: '#fcd34d' },
+  shoes:         { primary: '#ea580c', gradient: 'linear-gradient(135deg,#ea580c 0%,#c2410c 100%)', light: '#fff7ed', ring: '#fdba74' },
+  'car-service': { primary: '#2563eb', gradient: 'linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%)', light: '#eff6ff', ring: '#93c5fd' },
+  barber:        { primary: '#9333ea', gradient: 'linear-gradient(135deg,#9333ea 0%,#7c3aed 100%)', light: '#faf5ff', ring: '#d8b4fe' },
+  restaurant:    { primary: '#dc2626', gradient: 'linear-gradient(135deg,#dc2626 0%,#b91c1c 100%)', light: '#fef2f2', ring: '#fca5a5' },
+};
 
-function StepIndicator({ current }) {
-  return (
-    <div className="flex items-center justify-center gap-2 mb-8">
-      {[1, 2, 3].map((n) => (
-        <div key={n} className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-            n < current ? 'step-done' : n === current ? 'step-active' : 'step-pending'}`}>
-            {n < current ? '✓' : n}
-          </div>
-          {n < 3 && <div className={`w-12 h-0.5 ${n < current ? 'bg-teal-400' : 'bg-gray-200'}`} />}
-        </div>
-      ))}
-    </div>
-  );
+const DEFAULT_THEME = THEMES['barber'];
+
+function Stars({ count }) {
+  return <span className="text-yellow-400 text-lg">{'★'.repeat(count)}{'☆'.repeat(5 - count)}</span>;
 }
 
 function dbToShop(row) {
@@ -50,7 +46,7 @@ function dbToShop(row) {
     subType: row.sub_type || '',
     location: row.location,
     googleProfileUrl: row.google_profile_url || '',
-    websiteUrl: row.website_url || '',
+    photoUrl: row.photo_url || '',
     stats: {
       scans: row.scans || 0,
       reviewsGenerated: row.reviews_generated || 0,
@@ -59,23 +55,54 @@ function dbToShop(row) {
   };
 }
 
+const ANIM_CSS = `
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(28px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes popIn {
+    0%   { opacity: 0; transform: scale(0.88); }
+    70%  { transform: scale(1.04); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes celebrate {
+    0%,100% { transform: scale(1) rotate(0deg); }
+    25%      { transform: scale(1.4) rotate(-12deg); }
+    75%      { transform: scale(1.4) rotate(12deg); }
+  }
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 var(--ring-color); }
+    70%  { box-shadow: 0 0 0 10px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  .anim-fadeInUp    { animation: fadeInUp 0.45s ease-out both; }
+  .anim-slideInRight{ animation: slideInRight 0.4s ease-out both; }
+  .anim-popIn       { animation: popIn 0.35s cubic-bezier(.22,.68,0,1.2) both; }
+  .anim-celebrate   { animation: celebrate 0.7s ease-in-out; }
+`;
+
 export default function ShopReviewPage({ params }) {
   const { shopId } = params;
-  const [shop, setShop] = useState(null);
+  const [shop, setShop]       = useState(null);
   const [notFound, setNotFound] = useState(false);
-  const [config, setConfig] = useState(null);
+  const [config, setConfig]   = useState(null);
+  const [theme, setTheme]     = useState(DEFAULT_THEME);
 
-  const [step, setStep] = useState(1);
-  const [rating, setRating] = useState(null);
-  const [liked, setLiked] = useState([]);
+  const [step, setStep]       = useState(1);
+  const [rating, setRating]   = useState(null);
+  const [liked, setLiked]     = useState([]);
   const [duration, setDuration] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const [reviews, setReviews] = useState(null);
-  const [scores, setScores] = useState(null);
+  const [scores, setScores]   = useState(null);
   const [reviewVariant, setReviewVariant] = useState(0);
   const [activeLang, setActiveLang] = useState('english');
-  const [copied, setCopied] = useState('');
+  const [copied, setCopied]   = useState('');
 
   useEffect(() => {
     async function load() {
@@ -88,6 +115,7 @@ export default function ShopReviewPage({ params }) {
       const shopData = dbToShop(data);
       setShop(shopData);
       setConfig(CATEGORY_CONFIG[shopData.businessType]);
+      setTheme(THEMES[shopData.businessType] || DEFAULT_THEME);
       await supabase
         .from('businesses')
         .update({ scans: (data.scans || 0) + 1 })
@@ -103,7 +131,6 @@ export default function ShopReviewPage({ params }) {
     setLoading(true);
     setTimeout(async () => {
       try {
-        // Re-fetch latest reviews_generated so the variant is always current
         const { data: fresh } = await supabase
           .from('businesses')
           .select('reviews_generated')
@@ -117,14 +144,12 @@ export default function ShopReviewPage({ params }) {
           businessType: shop.businessType,
           subType: shop.subType,
           location: shop.location,
-          rating,
-          liked,
-          duration,
-          variant: currentVariant, // ← seeds the template engine
+          rating, liked, duration,
+          variant: currentVariant,
         });
         setReviews(result.reviews);
         setScores(result.scores);
-        setReviewVariant(currentVariant + 1); // what this review counts as
+        setReviewVariant(currentVariant + 1);
 
         await supabase
           .from('businesses')
@@ -158,9 +183,11 @@ export default function ShopReviewPage({ params }) {
 
   // ── Not found ──
   if (notFound) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="card max-w-sm w-full text-center">
-        <div className="text-5xl mb-4">❌</div>
+    <div className="min-h-screen flex items-center justify-center p-4"
+      style={{ background: 'linear-gradient(135deg,#f8fafc 0%,#e0e7ff 100%)' }}>
+      <style>{ANIM_CSS}</style>
+      <div className="anim-popIn bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-white/70">
+        <div className="text-6xl mb-4">🔍</div>
         <h2 className="text-xl font-bold text-gray-800 mb-2">Shop Not Found</h2>
         <p className="text-gray-500 text-sm">This QR code may be expired or the shop has been removed.</p>
       </div>
@@ -168,99 +195,195 @@ export default function ShopReviewPage({ params }) {
   );
 
   if (!shop || !config) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-gray-400 text-lg">Loading...</div>
+    <div className="min-h-screen flex items-center justify-center"
+      style={{ background: 'linear-gradient(135deg,#f8fafc 0%,#e0e7ff 100%)' }}>
+      <div className="text-center">
+        <div className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin mx-auto mb-4" />
+        <p className="text-gray-400 font-medium">Loading...</p>
+      </div>
     </div>
   );
 
-  // ── Results screen ──
-  if (reviews) {
-    const langReviews = reviews[activeLang] || reviews.english;
+  // ── Hero ──
+  const Hero = () => (
+    <div className="relative overflow-hidden rounded-3xl mb-6 shadow-2xl" style={{ minHeight: 200 }}>
+      {shop.photoUrl ? (
+        <>
+          <img src={shop.photoUrl} alt={shop.shopName} className="w-full h-52 object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+        </>
+      ) : (
+        <div className="h-52 w-full relative overflow-hidden" style={{ background: theme.gradient }}>
+          <div className="absolute inset-0 opacity-10"
+            style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, white 2px, transparent 2px)', backgroundSize: '32px 32px' }} />
+          <div className="absolute top-5 right-6 text-7xl opacity-20">{config.icon}</div>
+        </div>
+      )}
+      <div className="absolute inset-0 flex flex-col justify-end p-5">
+        <div className="flex items-end gap-3">
+          <span className="text-5xl drop-shadow-lg">{config.icon}</span>
+          <div className="flex-1 min-w-0">
+            <div className="mb-1.5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white"
+                style={{ background: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.35)' }}>
+                <span style={{ color: '#4ade80' }}>✓</span> Verified Business
+              </span>
+            </div>
+            <h1 className="text-2xl font-extrabold text-white leading-tight drop-shadow-md">{shop.shopName}</h1>
+            <p className="text-white/75 text-sm mt-0.5 truncate">{config.label} · {shop.location}</p>
+            {shop.subType && <p className="text-white/55 text-xs mt-0.5">{shop.subType}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Step Progress Bar ──
+  const StepBar = () => {
+    const steps = [{ n: 1, label: 'Rate' }, { n: 2, label: 'Liked' }, { n: 3, label: 'Duration' }];
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50">
-        <div className="max-w-2xl mx-auto px-4 py-10">
-          <div className="text-center mb-6">
-            <div className="text-4xl mb-2">✨</div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Your Reviews Are Ready!</h1>
-            <p className="text-gray-500 text-sm">Pick a language → choose a review → copy it → it opens Google automatically.</p>
-            {reviewVariant > 0 && (
-              <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-xs text-indigo-700 font-medium">
-                🔄 Unique review #{reviewVariant} generated for {shop.shopName}
+      <div className="flex items-center justify-center mb-8">
+        {steps.map((s, i) => (
+          <div key={s.n} className="flex items-center">
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-400"
+                style={s.n < step
+                  ? { background: theme.gradient, color: '#fff', boxShadow: `0 0 0 3px ${theme.ring}` }
+                  : s.n === step
+                  ? { background: theme.gradient, color: '#fff', boxShadow: `0 0 0 4px ${theme.ring}, 0 0 18px ${theme.ring}80` }
+                  : { background: '#f1f5f9', color: '#94a3b8' }
+                }>
+                {s.n < step ? '✓' : s.n}
+              </div>
+              <span className="text-xs font-semibold"
+                style={{ color: s.n <= step ? theme.primary : '#94a3b8' }}>
+                {s.label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className="w-16 h-1 mx-2 mb-5 rounded-full transition-all duration-500 overflow-hidden"
+                style={{ background: '#e2e8f0' }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: step > s.n ? '100%' : '0%', background: theme.gradient }} />
               </div>
             )}
           </div>
+        ))}
+      </div>
+    );
+  };
 
+  const glassCard = {
+    backdropFilter: 'blur(24px)',
+    background: 'rgba(255,255,255,0.88)',
+    borderRadius: 24,
+    padding: 24,
+    border: '1px solid rgba(255,255,255,0.75)',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.09)',
+  };
+
+  // ── Results Screen ──
+  if (reviews) {
+    const langReviews = reviews[activeLang] || reviews.english;
+    return (
+      <div className="min-h-screen pb-10"
+        style={{ background: `linear-gradient(160deg,${theme.light} 0%,#f8fafc 45%,#f0f4ff 100%)` }}>
+        <style>{ANIM_CSS}</style>
+        <div className="max-w-2xl mx-auto px-4 py-8">
+
+          {/* Celebration */}
+          <div className="text-center mb-7 anim-fadeInUp">
+            <div className="text-6xl mb-3 inline-block anim-celebrate">🎉</div>
+            <h1 className="text-2xl font-extrabold text-gray-900 mb-2">Your Reviews Are Ready!</h1>
+            <p className="text-gray-500 text-sm mb-3">Pick language → choose a review → copy & paste on Google</p>
+            {reviewVariant > 0 && (
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold text-white shadow-lg"
+                style={{ background: theme.gradient, boxShadow: `0 4px 18px ${theme.ring}` }}>
+                🔄 Unique review #{reviewVariant} · {shop.shopName}
+              </span>
+            )}
+          </div>
+
+          {/* AI Scores */}
           {scores && (
-            <div className="card mb-5">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">AI Quality Scores</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                {[
-                  { label: 'Authenticity', val: scores.authenticity },
-                  { label: 'Human-Like', val: scores.humanLikeness },
-                  { label: 'Uniqueness', val: scores.uniqueness },
-                  { label: 'Google Safe', val: scores.googleSafe },
-                ].map((s) => (
-                  <div key={s.label} className="bg-gray-50 rounded-xl p-3">
-                    <div className={`text-xl font-extrabold ${s.val >= 90 ? 'text-green-600' : 'text-yellow-600'}`}>{s.val}%</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
-                  </div>
-                ))}
+            <div className="mb-5 anim-fadeInUp" style={{ animationDelay: '0.08s' }}>
+              <div style={{ ...glassCard, padding: 16 }}>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 text-center">AI Quality Scores</p>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  {[
+                    { label: 'Authentic', val: scores.authenticity },
+                    { label: 'Human',     val: scores.humanLikeness },
+                    { label: 'Unique',    val: scores.uniqueness },
+                    { label: 'Safe',      val: scores.googleSafe },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-xl py-2.5 px-1" style={{ background: theme.light }}>
+                      <div className="text-lg font-extrabold" style={{ color: theme.primary }}>{s.val}%</div>
+                      <div className="text-xs text-gray-500">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          <div className="flex gap-2 mb-5 bg-white rounded-2xl p-1.5 shadow-sm border border-gray-100">
+          {/* Language tabs */}
+          <div className="flex gap-2 mb-5 p-1.5 anim-fadeInUp" style={{ animationDelay: '0.12s', ...glassCard, padding: '6px' }}>
             {LANG_TABS.map((lt) => (
-              <button
-                key={lt.key}
-                onClick={() => setActiveLang(lt.key)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  activeLang === lt.key ? 'bg-purple-600 text-white shadow' : 'text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                <span>{lt.flag}</span>
-                <span>{lt.label}</span>
+              <button key={lt.key} onClick={() => setActiveLang(lt.key)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-200"
+                style={activeLang === lt.key
+                  ? { background: theme.gradient, color: '#fff', boxShadow: `0 2px 12px ${theme.ring}` }
+                  : { color: '#9ca3af' }}>
+                <span>{lt.flag}</span><span>{lt.label}</span>
               </button>
             ))}
           </div>
 
+          {/* Review cards */}
           <div className="space-y-4 mb-5">
-            {REVIEW_TYPES.map((rt) => {
+            {REVIEW_TYPES.map((rt, i) => {
               const text = langReviews[rt.key];
               const wc = text?.trim().split(/\s+/).length || 0;
               const isCopied = copied === `${activeLang}-${rt.key}`;
               return (
-                <div key={rt.key} className={`card border ${rt.color}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`badge ${rt.badge} text-xs`}>{rt.label}</span>
-                      <span className="text-xs text-gray-400">{wc} words</span>
+                <div key={rt.key} className="anim-slideInRight" style={{ animationDelay: `${0.18 + i * 0.1}s` }}>
+                  <div style={glassCard}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{rt.emoji}</span>
+                        <span className="font-bold text-gray-800">{rt.label}</span>
+                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{wc} words</span>
+                      </div>
+                      <Stars count={RATING_OPTIONS.find((r) => r.key === rating)?.stars || 5} />
                     </div>
-                    <Stars count={RATING_OPTIONS.find((r) => r.key === rating)?.stars || 5} />
+                    <p className="text-gray-700 text-sm leading-relaxed mb-4 italic">"{text}"</p>
+                    <button
+                      onClick={() => copyAndOpen(`${activeLang}-${rt.key}`, text)}
+                      className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all duration-200 active:scale-95"
+                      style={isCopied
+                        ? { background: 'linear-gradient(135deg,#16a34a,#15803d)', boxShadow: '0 4px 16px #86efac80' }
+                        : { background: theme.gradient, boxShadow: `0 4px 20px ${theme.ring}80` }}>
+                      {isCopied ? '✓ Copied! Opening Google...' : '📋 Copy & Open Google Reviews'}
+                    </button>
                   </div>
-                  <p className="text-gray-700 text-sm leading-relaxed mb-4">"{text}"</p>
-                  <button
-                    onClick={() => copyAndOpen(`${activeLang}-${rt.key}`, text)}
-                    className={`w-full btn-primary text-sm py-3 ${isCopied ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-600 hover:bg-purple-700'}`}
-                  >
-                    {isCopied ? '✓ Copied! Opening Google...' : '📋 Copy & Open Google Reviews'}
-                  </button>
                 </div>
               );
             })}
           </div>
 
-          <div className="card bg-amber-50 border border-amber-200 mb-4">
-            <h4 className="font-semibold text-amber-800 mb-2">📋 How to post your review</h4>
-            <ol className="text-sm text-amber-700 space-y-1.5 list-decimal list-inside">
-              <li>Tap the button above — review copies to clipboard</li>
+          {/* Instructions */}
+          <div className="mb-4 p-4 rounded-2xl anim-fadeInUp" style={{ animationDelay: '0.5s', background: '#fffbeb', border: '1px solid #fcd34d' }}>
+            <h4 className="font-bold text-amber-800 mb-2 text-sm">📋 How to post your review</h4>
+            <ol className="text-sm text-amber-700 space-y-1 list-decimal list-inside">
+              <li>Tap the Copy button — review copies to clipboard</li>
               <li>Google opens automatically in a new tab</li>
-              <li>Click "Write a review", paste your review, give 5 stars</li>
-              <li>Hit Submit — done! 🎉</li>
+              <li>Click "Write a review", paste it, give 5 stars & submit</li>
             </ol>
           </div>
 
-          <button onClick={resetForm} className="w-full btn-secondary text-sm">
+          <button onClick={resetForm}
+            className="w-full py-3.5 rounded-2xl text-sm font-semibold text-gray-600 bg-white/80 border-2 border-gray-100 hover:bg-white transition-all"
+            style={{ backdropFilter: 'blur(12px)' }}>
             ← Start Over
           </button>
         </div>
@@ -268,56 +391,42 @@ export default function ShopReviewPage({ params }) {
     );
   }
 
-  // ── Shop header ──
-  const ShopHeader = () => (
-    <div className="card text-center mb-6">
-      <div className="text-3xl mb-2">{config.icon}</div>
-      <h2 className="text-xl font-bold text-gray-900">{shop.shopName}</h2>
-      <p className="text-gray-500 text-sm">{config.label} · {shop.location}</p>
-      {shop.subType && <p className="text-xs text-gray-400 mt-1">{shop.subType}</p>}
-    </div>
-  );
-
-  const accentColor = {
-    clothes: 'border-pink-500 bg-pink-50 text-pink-800',
-    pharmacy: 'border-green-500 bg-green-50 text-green-800',
-    jewellery: 'border-yellow-500 bg-yellow-50 text-yellow-800',
-    shoes: 'border-orange-500 bg-orange-50 text-orange-800',
-    'car-service': 'border-blue-500 bg-blue-50 text-blue-800',
-    barber: 'border-purple-500 bg-purple-50 text-purple-800',
-  }[shop.businessType] || 'border-blue-500 bg-blue-50 text-blue-800';
-
-  const btnColor = {
-    clothes: 'bg-pink-600 hover:bg-pink-700',
-    pharmacy: 'bg-green-600 hover:bg-green-700',
-    jewellery: 'bg-yellow-600 hover:bg-yellow-700',
-    shoes: 'bg-orange-600 hover:bg-orange-700',
-    'car-service': 'bg-blue-600 hover:bg-blue-700',
-    barber: 'bg-purple-600 hover:bg-purple-700',
-  }[shop.businessType] || 'bg-blue-600 hover:bg-blue-700';
-
+  // ── Main Form ──
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
-      <div className="max-w-lg mx-auto px-4 py-10">
-        <ShopHeader />
-        <StepIndicator current={step} />
+    <div className="min-h-screen pb-10"
+      style={{ background: `linear-gradient(160deg,${theme.light} 0%,#f8fafc 40%,#f0f4ff 100%)` }}>
+      <style>{ANIM_CSS}</style>
+      <div className="max-w-lg mx-auto px-4 pt-6">
+
+        <Hero />
+        <StepBar />
 
         {/* Step 1: Rating */}
         {step === 1 && (
-          <div className="card">
-            <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">How was your experience?</h2>
-            <p className="text-gray-400 text-sm text-center mb-6">Your overall impression</p>
+          <div className="anim-popIn" style={glassCard}>
+            <h2 className="text-xl font-extrabold text-gray-900 mb-1 text-center">How was your experience?</h2>
+            <p className="text-gray-400 text-sm text-center mb-6">Tap to select your overall impression</p>
             <div className="space-y-3">
               {RATING_OPTIONS.map((opt) => (
                 <button key={opt.key}
                   onClick={() => { setRating(opt.key); setStep(2); }}
-                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left hover:shadow-sm ${
-                    rating === opt.key ? `${accentColor} border-opacity-80` : 'border-gray-100 bg-white hover:border-gray-300'}`}>
-                  <span className="text-3xl">{opt.emoji}</span>
-                  <div>
-                    <div className="font-semibold text-gray-900">{opt.label}</div>
-                    <Stars count={opt.stars} />
+                  className="w-full flex items-center gap-4 text-left transition-all duration-200 active:scale-95"
+                  style={{
+                    padding: '16px 20px',
+                    borderRadius: 18,
+                    border: rating === opt.key ? `2px solid ${theme.primary}` : '2px solid #f1f5f9',
+                    background: rating === opt.key ? theme.light : '#ffffff',
+                    boxShadow: rating === opt.key
+                      ? `0 0 0 4px ${theme.ring}55, 0 4px 20px rgba(0,0,0,0.06)`
+                      : '0 2px 8px rgba(0,0,0,0.04)',
+                    transition: 'all 0.18s ease',
+                  }}>
+                  <span className="text-4xl">{opt.emoji}</span>
+                  <div className="flex-1">
+                    <div className="font-bold text-gray-900">{opt.label}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
                   </div>
+                  <Stars count={opt.stars} />
                 </button>
               ))}
             </div>
@@ -326,29 +435,52 @@ export default function ShopReviewPage({ params }) {
 
         {/* Step 2: What did you like */}
         {step === 2 && (
-          <div className="card">
-            <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">What did you like most?</h2>
+          <div className="anim-popIn" style={glassCard}>
+            <h2 className="text-xl font-extrabold text-gray-900 mb-1 text-center">What did you like most?</h2>
             <p className="text-gray-400 text-sm text-center mb-5">Select all that apply</p>
-            <div className="grid grid-cols-2 gap-2.5 mb-6">
-              {config.likedOptions.map((opt) => (
-                <button key={opt.key}
-                  onClick={() => toggleLiked(opt.key)}
-                  className={`flex items-center gap-2 p-3 rounded-2xl border-2 transition-all text-left text-sm ${
-                    liked.includes(opt.key)
-                      ? `border-purple-500 bg-purple-50 text-purple-800 font-semibold`
-                      : 'border-gray-100 bg-white text-gray-700 hover:border-purple-200'}`}>
-                  <span className="text-lg">{opt.emoji}</span>
-                  <span className="leading-tight">{opt.label}</span>
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-2.5 mb-5">
+              {config.likedOptions.map((opt) => {
+                const sel = liked.includes(opt.key);
+                return (
+                  <button key={opt.key}
+                    onClick={() => toggleLiked(opt.key)}
+                    className="flex items-center gap-2 text-left transition-all duration-150 active:scale-95"
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 16,
+                      border: sel ? `2px solid ${theme.primary}` : '2px solid #f1f5f9',
+                      background: sel ? theme.gradient : '#ffffff',
+                      boxShadow: sel ? `0 4px 16px ${theme.ring}60` : '0 1px 4px rgba(0,0,0,0.04)',
+                    }}>
+                    <span className="text-xl shrink-0">{opt.emoji}</span>
+                    <span className={`text-sm font-semibold leading-tight flex-1 ${sel ? 'text-white' : 'text-gray-700'}`}>
+                      {opt.label}
+                    </span>
+                    {sel && <span className="text-white text-xs font-bold shrink-0">✓</span>}
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-xs text-center text-gray-400 mb-4">
-              {liked.length === 0 ? 'Select at least one option' : `${liked.length} selected`}
-            </p>
+            <div className="text-center mb-4 min-h-[24px]">
+              {liked.length === 0
+                ? <span className="text-xs text-gray-400">Select at least one to continue</span>
+                : <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full text-white"
+                    style={{ background: theme.gradient }}>
+                    {liked.length} selected ✓
+                  </span>
+              }
+            </div>
             <div className="flex gap-3">
-              <button onClick={() => setStep(1)} className="btn-secondary flex-1">← Back</button>
+              <button onClick={() => setStep(1)}
+                className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-600 bg-white border-2 border-gray-100 transition-all hover:border-gray-200">
+                ← Back
+              </button>
               <button onClick={() => setStep(3)} disabled={liked.length === 0}
-                className={`flex-1 text-sm font-semibold py-3 px-4 rounded-xl text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed ${btnColor}`}>
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-40"
+                style={{
+                  background: liked.length > 0 ? theme.gradient : '#e2e8f0',
+                  boxShadow: liked.length > 0 ? `0 4px 16px ${theme.ring}80` : 'none',
+                }}>
                 Next →
               </button>
             </div>
@@ -357,25 +489,45 @@ export default function ShopReviewPage({ params }) {
 
         {/* Step 3: Duration */}
         {step === 3 && (
-          <div className="card">
-            <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">How long have you been a customer?</h2>
+          <div className="anim-popIn" style={glassCard}>
+            <h2 className="text-xl font-extrabold text-gray-900 mb-1 text-center">How long have you been a customer?</h2>
             <p className="text-gray-400 text-sm text-center mb-6">Helps personalise your review</p>
-            <div className="space-y-3 mb-6">
-              {config.durationOptions.map((opt) => (
-                <button key={opt.key}
-                  onClick={() => setDuration(opt.key)}
-                  className={`w-full p-4 rounded-2xl border-2 transition-all text-left font-medium ${
-                    duration === opt.key
-                      ? `${accentColor} border-opacity-80`
-                      : 'border-gray-100 bg-white text-gray-700 hover:border-gray-300'}`}>
-                  {opt.label}
-                </button>
-              ))}
+            <div className="space-y-2.5 mb-6">
+              {config.durationOptions.map((opt) => {
+                const sel = duration === opt.key;
+                return (
+                  <button key={opt.key}
+                    onClick={() => setDuration(opt.key)}
+                    className="w-full text-left transition-all duration-150 active:scale-95"
+                    style={{
+                      padding: '15px 20px',
+                      borderRadius: 16,
+                      border: sel ? `2px solid ${theme.primary}` : '2px solid #f1f5f9',
+                      background: sel ? theme.gradient : '#ffffff',
+                      boxShadow: sel ? `0 4px 16px ${theme.ring}60` : '0 1px 4px rgba(0,0,0,0.04)',
+                      color: sel ? '#ffffff' : '#374151',
+                      fontWeight: sel ? 700 : 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}>
+                    <span>{opt.label}</span>
+                    {sel && <span className="text-white font-bold">✓</span>}
+                  </button>
+                );
+              })}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setStep(2)} className="btn-secondary flex-1">← Back</button>
+              <button onClick={() => setStep(2)}
+                className="flex-1 py-3 rounded-xl text-sm font-semibold text-gray-600 bg-white border-2 border-gray-100 transition-all hover:border-gray-200">
+                ← Back
+              </button>
               <button onClick={generate} disabled={!duration || loading}
-                className={`flex-1 text-sm font-semibold py-3 px-4 rounded-xl text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed ${btnColor}`}>
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-40"
+                style={{
+                  background: duration && !loading ? theme.gradient : '#e2e8f0',
+                  boxShadow: duration && !loading ? `0 4px 20px ${theme.ring}` : 'none',
+                }}>
                 {loading ? (
                   <span className="flex items-center gap-2 justify-center">
                     <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
