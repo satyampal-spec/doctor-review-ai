@@ -117,6 +117,7 @@ export default function BusinessSite({ params }) {
   const [notFound, setNotFound] = useState(false);
   const [navScrolled, setNavScrolled] = useState(false);
   const [mobileOpen, setMobileOpen]   = useState(false);
+  const [lightbox, setLightbox]       = useState(null); // url string or null
 
   const theme = THEMES[biz?.business_type] || DEFAULT_THEME;
 
@@ -131,10 +132,18 @@ export default function BusinessSite({ params }) {
       const { data: b, error } = await supabase.from('businesses').select('*').eq('id', businessId).single();
       if (error || !b) { setNotFound(true); return; }
       setBiz(b);
+      document.title = b.shop_name;
       const { data: s } = await supabase.from('business_websites').select('*').eq('business_id', businessId).single();
       setSite(s);
     })();
   }, [businessId]);
+
+  // Close lightbox on Escape
+  useEffect(() => {
+    const fn = (e) => { if (e.key === 'Escape') setLightbox(null); };
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+  }, []);
 
   const wa = (msg) => {
     const num = site?.whatsapp_number?.replace(/\D/g, '');
@@ -187,6 +196,13 @@ export default function BusinessSite({ params }) {
 
   return (
     <div className="bg-white overflow-x-hidden font-sans">
+      {/* ── Lightbox ── */}
+      {lightbox && (
+        <div className="lightbox" onClick={() => setLightbox(null)}>
+          <button className="lb-close" onClick={() => setLightbox(null)}>✕</button>
+          <img src={lightbox} alt="Gallery" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
@@ -196,6 +212,7 @@ export default function BusinessSite({ params }) {
         @keyframes waFloat   { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
         @keyframes waPulse   { 0%,100%{ box-shadow:0 0 0 0 rgba(37,211,102,0.45); } 70%{ box-shadow:0 0 0 14px transparent; } }
         @keyframes shimmer   { 0%{ background-position:-200% 0; } 100%{ background-position:200% 0; } }
+        @keyframes lbFadeIn  { from { opacity:0; } to { opacity:1; } }
         .hero-1 { animation: heroBadge 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both; }
         .hero-2 { animation: heroUp    1.0s cubic-bezier(0.16,1,0.3,1) 0.4s both; }
         .hero-3 { animation: heroUp    1.0s cubic-bezier(0.16,1,0.3,1) 0.65s both; }
@@ -207,6 +224,34 @@ export default function BusinessSite({ params }) {
         .card-hover { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s; }
         .card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
         img { max-width:100%; }
+        .gallery-img { cursor: zoom-in; }
+        .lightbox { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.95); display:flex; align-items:center; justify-content:center; animation:lbFadeIn 0.2s ease; }
+        .lightbox img { max-width:95vw; max-height:92vh; object-fit:contain; border-radius:8px; box-shadow:0 32px 80px rgba(0,0,0,0.6); }
+        .lb-close { position:absolute; top:18px; right:22px; font-size:32px; color:#fff; cursor:pointer; line-height:1; opacity:0.8; background:none; border:none; }
+        .lb-close:hover { opacity:1; }
+        /* ── Mobile overrides ── */
+        @media (max-width: 640px) {
+          .hero-section { min-height: 100svh !important; }
+          .hero-content { padding: 100px 20px 60px !important; }
+          .hero-title { font-size: 2.2rem !important; letter-spacing: -0.02em !important; }
+          .hero-sub { font-size: 1rem !important; }
+          .hero-btns { flex-direction: column !important; align-items: stretch !important; }
+          .hero-btns button { width: 100% !important; justify-content: center !important; }
+          .about-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .about-img { height: 260px !important; }
+          .about-year-badge { width:80px !important; height:80px !important; bottom:-12px !important; right:-8px !important; font-size:16px !important; }
+          .section-pad { padding: 64px 18px !important; }
+          .section-h2 { font-size: 1.7rem !important; }
+          .gallery-grid { grid-template-columns: 1fr 1fr !important; }
+          .gallery-hero { grid-column: span 2 !important; aspect-ratio: 16/9 !important; }
+          .services-grid { grid-template-columns: 1fr !important; }
+          .menu-grid { grid-template-columns: 1fr !important; }
+          .highlights-grid { grid-template-columns: 1fr !important; }
+          .cta-h2 { font-size: 1.8rem !important; }
+          .cta-btn { padding: 16px 28px !important; font-size: 16px !important; }
+          .timings-pad { padding: 28px 20px !important; }
+          .nav-brand { font-size: 15px !important; }
+        }
       `}</style>
 
       {/* ── Floating WhatsApp ── */}
@@ -225,7 +270,7 @@ export default function BusinessSite({ params }) {
           transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
         }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontWeight: 800, fontSize: 18, color: navScrolled ? theme.d : '#fff', transition: 'color 0.3s', letterSpacing: '-0.01em' }}>
+          <span className="nav-brand" style={{ fontWeight: 800, fontSize: 18, color: navScrolled ? theme.d : '#fff', transition: 'color 0.3s', letterSpacing: '-0.01em' }}>
             {biz.shop_name}
           </span>
           {/* Desktop nav */}
@@ -265,25 +310,25 @@ export default function BusinessSite({ params }) {
       </nav>
 
       {/* ── Hero ── */}
-      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <section className="hero-section" style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0 }}>
           <img src={heroPhoto} alt={biz.shop_name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0.88) 100%)' }} />
         </div>
-        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '120px 24px 80px', maxWidth: 800, margin: '0 auto' }}>
+        <div className="hero-content" style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '120px 24px 80px', maxWidth: 800, margin: '0 auto' }}>
           <div className="hero-1">
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 20px', borderRadius: 100, fontSize: 13, fontWeight: 700, color: '#fff', border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', marginBottom: 24 }}>
               <span style={{ color: '#4ade80' }}>●</span> Verified Business · Bengaluru
             </span>
           </div>
-          <h1 className="hero-2" style={{ fontSize: 'clamp(2.4rem,7vw,5rem)', fontWeight: 900, color: '#fff', lineHeight: 1.08, letterSpacing: '-0.03em', marginBottom: 20 }}>
+          <h1 className="hero-2 hero-title" style={{ fontSize: 'clamp(2rem,7vw,5rem)', fontWeight: 900, color: '#fff', lineHeight: 1.08, letterSpacing: '-0.03em', marginBottom: 20 }}>
             {biz.shop_name}
           </h1>
-          <p className="hero-3" style={{ fontSize: 'clamp(1.1rem,2.5vw,1.45rem)', color: 'rgba(255,255,255,0.78)', fontWeight: 300, lineHeight: 1.5, marginBottom: 14 }}>
+          <p className="hero-3 hero-sub" style={{ fontSize: 'clamp(1rem,2.5vw,1.45rem)', color: 'rgba(255,255,255,0.78)', fontWeight: 300, lineHeight: 1.5, marginBottom: 14 }}>
             {site.tagline || `Premium ${biz.business_type} in ${biz.location}`}
           </p>
           <p className="hero-3" style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 44 }}>📍 {biz.location}{extra.cuisine ? ` · ${extra.cuisine}` : ''}{extra.veg_type === 'veg' ? ' · 🌿 Pure Veg' : ''}</p>
-          <div className="hero-4" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center' }}>
+          <div className="hero-4 hero-btns" style={{ display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center' }}>
             <button onClick={() => wa(waMsg)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 34px', borderRadius: 100, background: '#25D366', color: '#fff', fontSize: 16, fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 8px 32px rgba(37,211,102,0.45)', transition: 'transform 0.2s' }}
               onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.04)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
@@ -304,13 +349,13 @@ export default function BusinessSite({ params }) {
       </section>
 
       {/* ── About ── */}
-      <section id="about" style={{ padding: '100px 24px', background: '#fff' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 64, alignItems: 'center' }}>
+      <section id="about" className="section-pad" style={{ padding: '100px 24px', background: '#fff' }}>
+        <div className="about-grid" style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 64, alignItems: 'center' }}>
           <Reveal>
             <div style={{ position: 'relative' }}>
               <div style={{ position: 'absolute', top: -16, left: -16, width: 80, height: 80, borderRadius: '50%', background: theme.g, opacity: 0.12 }} />
-              <img src={about2Photo} alt="About" style={{ width: '100%', height: 380, objectFit: 'cover', borderRadius: 28, boxShadow: '0 24px 80px rgba(0,0,0,0.13)' }} />
-              <div style={{ position: 'absolute', bottom: -18, right: -18, width: 110, height: 110, borderRadius: 24, background: theme.g, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 12px 40px rgba(0,0,0,0.2)' }}>
+              <img src={about2Photo} alt="About" className="about-img" style={{ width: '100%', height: 380, objectFit: 'cover', borderRadius: 28, boxShadow: '0 24px 80px rgba(0,0,0,0.13)' }} />
+              <div className="about-year-badge" style={{ position: 'absolute', bottom: -18, right: -18, width: 110, height: 110, borderRadius: 24, background: theme.g, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 12px 40px rgba(0,0,0,0.2)' }}>
                 <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.8, textTransform: 'uppercase', letterSpacing: 1 }}>{extra.established_year ? 'Est.' : 'Trusted'}</span>
                 <span style={{ fontSize: extra.established_year ? 22 : 28 }}>{extra.established_year || '⭐'}</span>
               </div>
@@ -318,7 +363,7 @@ export default function BusinessSite({ params }) {
           </Reveal>
           <Reveal delay={0.18}>
             <Badge label="About Us" theme={theme} />
-            <h2 style={{ fontSize: 'clamp(1.8rem,3.5vw,2.8rem)', fontWeight: 900, color: '#111', lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 20, whiteSpace: 'pre-line' }}>
+            <h2 className="section-h2" style={{ fontSize: 'clamp(1.6rem,3.5vw,2.8rem)', fontWeight: 900, color: '#111', lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 20, whiteSpace: 'pre-line' }}>
               {ABOUT_HEADINGS[type] || biz.shop_name}
             </h2>
             <p style={{ color: '#6b7280', fontSize: 17, lineHeight: 1.75, marginBottom: 24 }}>
@@ -334,7 +379,7 @@ export default function BusinessSite({ params }) {
               <p style={{ color: '#9ca3af', fontSize: 14, marginBottom: 16 }}>💊 Consultation: ₹{extra.consultation_fee}</p>
             )}
             {highlights.length > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className="highlights-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {highlights.map((h, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, fontWeight: 600, color: '#374151' }}>
                     <span style={{ width: 22, height: 22, borderRadius: '50%', background: theme.g, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>✓</span>
@@ -349,12 +394,12 @@ export default function BusinessSite({ params }) {
 
       {/* ── Services / Menu ── */}
       {(services.length > 0 || menu.length > 0) && (
-        <section id="services" style={{ padding: '100px 24px', background: '#fafafa' }}>
+        <section id="services" className="section-pad" style={{ padding: '100px 24px', background: '#fafafa' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <Reveal>
               <div style={{ textAlign: 'center', marginBottom: 64 }}>
                 <Badge label={isRest ? 'Our Menu' : 'Services'} theme={theme} />
-                <h2 style={{ fontSize: 'clamp(1.8rem,3.5vw,2.8rem)', fontWeight: 900, color: '#111', letterSpacing: '-0.02em' }}>
+                <h2 className="section-h2" style={{ fontSize: 'clamp(1.6rem,3.5vw,2.8rem)', fontWeight: 900, color: '#111', letterSpacing: '-0.02em' }}>
                   {isRest ? 'What We Serve' : 'What We Offer'}
                 </h2>
               </div>
@@ -369,7 +414,7 @@ export default function BusinessSite({ params }) {
                       <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111', paddingBottom: 12, marginBottom: 16, borderBottom: `2px solid ${theme.p}`, display: 'inline-block' }}>
                         {cat.category}
                       </h3>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                      <div className="menu-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
                         {cat.items?.filter(i => i.name).map((item, ii) => (
                           <div key={ii} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 18px', background: '#fff', borderRadius: 16, border: '1px solid #f3f4f6', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', gap: 12 }}>
                             <div>
@@ -386,7 +431,7 @@ export default function BusinessSite({ params }) {
               </div>
             ) : (
               /* Services grid */
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+              <div className="services-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
                 {services.filter(s => s.name).map((s, i) => (
                   <Reveal key={i} delay={i * 0.07}>
                     <div className="card-hover" onClick={() => wa(`Hi ${biz.shop_name}! I'm interested in your ${s.name} service.`)}
@@ -412,21 +457,29 @@ export default function BusinessSite({ params }) {
 
       {/* ── Gallery ── */}
       {gallery.length > 1 && (
-        <section id="gallery" style={{ padding: '100px 24px', background: '#fff' }}>
+        <section id="gallery" className="section-pad" style={{ padding: '100px 24px', background: '#fff' }}>
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <Reveal>
               <div style={{ textAlign: 'center', marginBottom: 64 }}>
                 <Badge label="Gallery" theme={theme} />
-                <h2 style={{ fontSize: 'clamp(1.8rem,3.5vw,2.8rem)', fontWeight: 900, color: '#111', letterSpacing: '-0.02em' }}>A Look Inside</h2>
+                <h2 className="section-h2" style={{ fontSize: 'clamp(1.6rem,3.5vw,2.8rem)', fontWeight: 900, color: '#111', letterSpacing: '-0.02em' }}>A Look Inside</h2>
               </div>
             </Reveal>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: 'auto auto', gap: 14 }}>
+            <div className="gallery-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
               {gallery.slice(0, 6).map((url, i) => (
                 <Reveal key={i} delay={i * 0.07}>
-                  <div style={{ borderRadius: 20, overflow: 'hidden', aspectRatio: i === 0 ? '16/9' : '1', gridColumn: i === 0 ? 'span 2' : 'span 1', position: 'relative' }}>
-                    <img src={url} alt={`Gallery ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)', display: 'block' }}
+                  <div className={i === 0 ? 'gallery-hero' : ''} style={{ borderRadius: 20, overflow: 'hidden', aspectRatio: i === 0 ? '16/9' : '1', gridColumn: i === 0 ? 'span 2' : 'span 1', position: 'relative', cursor: 'zoom-in' }}
+                    onClick={() => setLightbox(url)}>
+                    <img src={url} alt={`Gallery ${i + 1}`} className="gallery-img" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s cubic-bezier(0.16,1,0.3,1)', display: 'block' }}
                       onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                       onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
+                      onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.18)'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0)'}>
+                      <span style={{ color: '#fff', fontSize: 28, opacity: 0, transition: 'opacity 0.2s' }}
+                        onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
+                        onMouseOut={(e) => e.currentTarget.style.opacity = '0'}>🔍</span>
+                    </div>
                   </div>
                 </Reveal>
               ))}
@@ -437,7 +490,7 @@ export default function BusinessSite({ params }) {
 
       {/* ── Timings ── */}
       {site.timings && (
-        <section id="timings" style={{ padding: '100px 24px', background: '#fafafa' }}>
+        <section id="timings" className="section-pad" style={{ padding: '100px 24px', background: '#fafafa' }}>
           <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
             <Reveal>
               <Badge label="Opening Hours" theme={theme} />
@@ -448,7 +501,7 @@ export default function BusinessSite({ params }) {
                   <h3 style={{ color: '#fff', fontWeight: 800, fontSize: 20, marginBottom: 4 }}>Opening Hours</h3>
                   <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>Always happy to see you</p>
                 </div>
-                <div style={{ background: '#fff', padding: '36px 32px' }}>
+                <div className="timings-pad" style={{ background: '#fff', padding: '36px 32px' }}>
                   <p style={{ color: '#374151', fontSize: 17, lineHeight: 1.8, fontWeight: 500 }}>{site.timings}</p>
                   {site.address && (
                     <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid #f3f4f6' }}>
@@ -463,18 +516,18 @@ export default function BusinessSite({ params }) {
       )}
 
       {/* ── CTA / Contact ── */}
-      <section id="contact" style={{ padding: '100px 24px', background: theme.g, position: 'relative', overflow: 'hidden' }}>
+      <section id="contact" className="section-pad" style={{ padding: '100px 24px', background: theme.g, position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
         <div style={{ position: 'relative', maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
           <Reveal>
             <div style={{ fontSize: 64, marginBottom: 20 }}>💬</div>
-            <h2 style={{ fontSize: 'clamp(2rem,4vw,3.2rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 18 }}>
+            <h2 className="cta-h2" style={{ fontSize: 'clamp(1.7rem,4vw,3.2rem)', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 18 }}>
               Ready to Connect?
             </h2>
-            <p style={{ color: 'rgba(255,255,255,0.78)', fontSize: 18, lineHeight: 1.65, marginBottom: 44, fontWeight: 300 }}>
+            <p style={{ color: 'rgba(255,255,255,0.78)', fontSize: 'clamp(15px,2vw,18px)', lineHeight: 1.65, marginBottom: 44, fontWeight: 300 }}>
               {CTA_TEXTS[type] || `Reach out to ${biz.shop_name} on WhatsApp.`}
             </p>
-            <button onClick={() => wa(waMsg)}
+            <button onClick={() => wa(waMsg)} className="cta-btn"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 12, padding: '18px 40px', borderRadius: 100, background: '#25D366', color: '#fff', fontSize: 18, fontWeight: 900, border: 'none', cursor: 'pointer', boxShadow: '0 12px 48px rgba(0,0,0,0.22)', transition: 'transform 0.2s' }}
               onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
               <WAIcon size={22} /> {waLabel}
