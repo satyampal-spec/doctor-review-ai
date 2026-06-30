@@ -50,6 +50,7 @@ export default function WebsiteBuilderPage({ params }) {
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
   const [uploadingIdx, setUploadingIdx] = useState(null);
+  const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
 
   // Form state
@@ -126,13 +127,18 @@ export default function WebsiteBuilderPage({ params }) {
 
   const uploadPhoto = async (file, idx) => {
     setUploadingIdx(idx);
-    const ext = file.name.split('.').pop();
-    const path = `${businessId}_gallery_${idx}_${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('site-gallery').upload(path, file, { upsert: true });
+    setUploadError('');
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const safeName = `${businessId}_gallery_${idx}_${Date.now()}.${ext}`;
+    console.log('[upload] starting', safeName, file.type, file.size);
+    const { data: upData, error } = await supabase.storage
+      .from('site-gallery')
+      .upload(safeName, file, { upsert: true, contentType: file.type || 'image/jpeg' });
+    console.log('[upload] result', upData, error);
     if (error) {
-      alert('Upload failed: ' + error.message + '\n\nMake sure you created the "site-gallery" bucket in Supabase Storage → New bucket → Public ON');
+      setUploadError(`Upload failed (slot ${idx + 1}): ${error.message}`);
     } else {
-      const { data } = supabase.storage.from('site-gallery').getPublicUrl(path);
+      const { data } = supabase.storage.from('site-gallery').getPublicUrl(safeName);
       const newUrls = [...galleryUrls];
       newUrls[idx] = data.publicUrl;
       setGalleryUrls(newUrls);
@@ -420,6 +426,11 @@ export default function WebsiteBuilderPage({ params }) {
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <SectionLabel>Photo Gallery</SectionLabel>
           <p className="text-xs text-gray-400 mb-5">First photo = hero background. Up to 6 photos. Tap each slot to upload.</p>
+          {uploadError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+              ⚠️ {uploadError}
+            </div>
+          )}
           {/* Single hidden file input used for all slots */}
           <input
             ref={fileInputRef}
