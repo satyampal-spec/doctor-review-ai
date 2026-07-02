@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { generateShopReview, CATEGORY_CONFIG } from '@/lib/shopReviewGenerator';
 import { supabase } from '@/lib/supabase';
 
@@ -87,6 +88,7 @@ const ANIM_CSS = `
 
 export default function ShopReviewPage({ params }) {
   const { shopId } = params;
+  const router = useRouter();
   const [shop, setShop]       = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [config, setConfig]   = useState(null);
@@ -112,6 +114,11 @@ export default function ShopReviewPage({ params }) {
         .eq('id', shopId)
         .single();
       if (error || !data) { setNotFound(true); return; }
+      // Hospitals have their own dedicated review page
+      if (data.business_type === 'hospital') {
+        router.replace(`/review/hospital/${shopId}`);
+        return;
+      }
       const shopData = dbToShop(data);
       setShop(shopData);
       setConfig(CATEGORY_CONFIG[shopData.businessType]);

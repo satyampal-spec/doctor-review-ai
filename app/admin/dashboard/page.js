@@ -103,10 +103,16 @@ export default function Dashboard() {
     setBusinesses((prev) => prev.filter((b) => b.id !== id));
   };
 
-  const copyLink = (id, type = 'clinic') => {
+  const reviewUrl = (biz) => {
+    if (!biz) return '';
+    const path = biz.businessType === 'hospital' ? 'hospital' : 'shop';
+    return `${window.location.origin}/review/${path}/${biz.id}`;
+  };
+
+  const copyLink = (id, type = 'clinic', biz = null) => {
     const url = type === 'clinic'
       ? `${window.location.origin}/review/${id}`
-      : `${window.location.origin}/review/shop/${id}`;
+      : reviewUrl(biz);
     navigator.clipboard.writeText(url);
     setCopied(id);
     setTimeout(() => setCopied(''), 2000);
@@ -398,12 +404,13 @@ export default function Dashboard() {
                             </td>
                             <td className="px-4 py-4">
                               <div className="flex gap-1.5 flex-wrap">
-                                <button onClick={() => copyLink(biz.id, 'shop')} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">
+                                <button onClick={() => copyLink(biz.id, 'shop', biz)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">
                                   {copied === biz.id ? '✓' : '🔗'}
                                 </button>
-                                <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType]} · ${biz.location}`, url: `${window.location.origin}/review/shop/${biz.id}`, color: SHOP_COLORS[biz.businessType] || '#7c3aed', downloadName: `qr-${biz.id}` })} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">📱</button>
-                                <a href={`/review/shop/${biz.id}`} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">👁</a>
-                                <a href={`/admin/website/${biz.id}`} className="text-xs px-3 py-1 rounded-lg font-bold text-white hover:opacity-90 transition-all" style={{ background: 'linear-gradient(135deg,#10b981,#047857)' }}>🌐 Website</a>
+                                <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType] || '🏥 Hospital'} · ${biz.location}`, url: reviewUrl(biz), color: SHOP_COLORS[biz.businessType] || '#0ea5e9', downloadName: `qr-${biz.id}` })} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">📱</button>
+                                <a href={reviewUrl(biz)} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">👁</a>
+                                <a href={`/admin/edit/${biz.id}`} className="text-xs px-2 py-1 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50">✏️</a>
+                                <a href={`/admin/website/${biz.id}`} className="text-xs px-3 py-1 rounded-lg font-bold text-white hover:opacity-90 transition-all" style={{ background: 'linear-gradient(135deg,#10b981,#047857)' }}>🌐</a>
                                 <button onClick={() => deleteBusiness(biz.id)} className="text-xs px-2 py-1 rounded-lg border border-red-100 text-red-400 hover:bg-red-50">✕</button>
                               </div>
                             </td>
@@ -450,11 +457,12 @@ export default function Dashboard() {
                             <div className="text-xs text-gray-500">Posted</div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => copyLink(biz.id, 'shop')} className="btn-secondary text-xs px-3 py-1.5 flex-1">{copied === biz.id ? '✓ Copied' : '🔗 Link'}</button>
-                          <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType]} · ${biz.location}`, url: `${window.location.origin}/review/shop/${biz.id}`, color: SHOP_COLORS[biz.businessType] || '#7c3aed', downloadName: `qr-${biz.id}` })} className="btn-secondary text-xs px-3 py-1.5 flex-1">📱 QR</button>
-                          <a href={`/review/shop/${biz.id}`} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs px-3 py-1.5 flex-1 text-center">👁 View</a>
-                          <a href={`/admin/website/${biz.id}`} className="text-xs px-3 py-1.5 flex-1 text-center rounded-xl font-bold text-white transition-all" style={{ background: 'linear-gradient(135deg,#10b981,#047857)' }}>🌐 Website</a>
+                        <div className="flex gap-2 flex-wrap">
+                          <button onClick={() => copyLink(biz.id, 'shop', biz)} className="btn-secondary text-xs px-3 py-1.5 flex-1">{copied === biz.id ? '✓ Copied' : '🔗 Link'}</button>
+                          <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType] || '🏥 Hospital'} · ${biz.location}`, url: reviewUrl(biz), color: SHOP_COLORS[biz.businessType] || '#0ea5e9', downloadName: `qr-${biz.id}` })} className="btn-secondary text-xs px-3 py-1.5 flex-1">📱 QR</button>
+                          <a href={reviewUrl(biz)} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs px-3 py-1.5 flex-1 text-center">👁 View</a>
+                          <a href={`/admin/edit/${biz.id}`} className="btn-secondary text-xs px-3 py-1.5 flex-1 text-center text-blue-600">✏️ Edit</a>
+                          <a href={`/admin/website/${biz.id}`} className="text-xs px-3 py-1.5 flex-1 text-center rounded-xl font-bold text-white transition-all" style={{ background: 'linear-gradient(135deg,#10b981,#047857)' }}>🌐 Site</a>
                         </div>
                       </div>
                     );
