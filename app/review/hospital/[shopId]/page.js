@@ -538,11 +538,6 @@ export default function HospitalReviewPage({ params }) {
               {copied === 'copied' ? '✅ Copied! Opening Google...' : '📋 Copy & Open Google Review'}
             </button>
 
-            <button onClick={copyOnly}
-              style={{ width: '100%', padding: '13px', borderRadius: 14, background: '#f0f9ff', color: THEME.dark, border: `2px solid ${THEME.ring}`, fontWeight: 700, fontSize: 14, cursor: 'pointer', marginBottom: 10, transition: 'all 0.18s' }}>
-              {copied === 'just_copied' ? '✅ Copied to clipboard!' : '📋 Copy Review Only'}
-            </button>
-
             <button onClick={regenerate}
               style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'transparent', color: '#64748b', border: '2px solid #e2e8f0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 10 }}>
               🔄 {mode === 'manual' ? 'Re-Polish' : 'Generate Different Version'}
