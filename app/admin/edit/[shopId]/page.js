@@ -23,7 +23,6 @@ export default function EditShopPage() {
     location: '',
     googleProfileUrl: '',
     websiteUrl: '',
-    googleReviewUrl: '',
   });
   const [errors, setErrors] = useState({});
   const [photoFile, setPhotoFile] = useState(null);
@@ -49,7 +48,6 @@ export default function EditShopPage() {
         location: data.location || '',
         googleProfileUrl: data.google_profile_url || '',
         websiteUrl: data.website_url || '',
-        googleReviewUrl: data.google_review_url || '',
       });
       setExistingPhoto(data.photo_url || null);
       setLoading(false);
@@ -106,7 +104,6 @@ export default function EditShopPage() {
       location: form.location.trim(),
       google_profile_url: form.googleProfileUrl.trim() || null,
       website_url: form.websiteUrl.trim() || null,
-      google_review_url: form.googleReviewUrl.trim() || null,
       photo_url: photoUrl,
     };
 
@@ -290,23 +287,14 @@ export default function EditShopPage() {
             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Links</h3>
             <div className="space-y-3">
               <div>
-                <label className="label">Google Review URL</label>
+                <label className="label">Google Business / Review URL</label>
                 <input
                   className="input-field"
-                  placeholder="https://share.google/..."
-                  value={form.googleReviewUrl}
-                  onChange={(e) => set('googleReviewUrl', e.target.value)}
-                />
-                <p className="text-xs text-gray-400 mt-1">The link customers tap to post their review on Google.</p>
-              </div>
-              <div>
-                <label className="label">Google Business Profile URL</label>
-                <input
-                  className="input-field"
-                  placeholder="https://g.page/yourshop"
+                  placeholder="https://share.google/... or https://g.page/yourshop"
                   value={form.googleProfileUrl}
                   onChange={(e) => set('googleProfileUrl', e.target.value)}
                 />
+                <p className="text-xs text-gray-400 mt-1">The link customers tap to post their Google review.</p>
               </div>
               <div>
                 <label className="label">Website URL</label>
