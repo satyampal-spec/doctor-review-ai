@@ -317,11 +317,6 @@ export default function HospitalReviewPage({ params }) {
       {/* Header */}
       <div style={{ background: THEME.gradient, padding: '0 20px' }}>
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '28px 0 32px', textAlign: 'center' }}>
-          <img
-            src={hospital.photo_url || HOSPITAL_STOCK_PHOTO}
-            alt={hospital.shop_name}
-            style={{ width: 84, height: 84, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.6)', marginBottom: 14, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}
-          />
           <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 800, margin: '0 0 6px', lineHeight: 1.2 }}>{hospital.shop_name}</h1>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.18)', borderRadius: 100, padding: '5px 14px', fontSize: 12, color: 'rgba(255,255,255,0.92)', fontWeight: 600 }}>
             <span style={{ color: '#4ade80' }}>●</span> Verified Hospital · {hospital.location}
