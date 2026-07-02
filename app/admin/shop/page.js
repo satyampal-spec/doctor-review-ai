@@ -93,7 +93,7 @@ export default function AddShopPage() {
 
   const reviewUrl =
     typeof window !== 'undefined' && success
-      ? `${window.location.origin}/review/shop/${success.id}`
+      ? `${window.location.origin}/review/${success.businessType === 'hospital' ? 'hospital' : 'shop'}/${success.id}`
       : '';
 
   const copyLink = () => navigator.clipboard.writeText(reviewUrl);
