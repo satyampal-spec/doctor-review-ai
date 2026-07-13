@@ -30,6 +30,7 @@ const THEMES = {
   'car-service': { primary: '#2563eb', gradient: 'linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%)', light: '#eff6ff', ring: '#93c5fd' },
   barber:        { primary: '#9333ea', gradient: 'linear-gradient(135deg,#9333ea 0%,#7c3aed 100%)', light: '#faf5ff', ring: '#d8b4fe' },
   restaurant:    { primary: '#dc2626', gradient: 'linear-gradient(135deg,#dc2626 0%,#b91c1c 100%)', light: '#fef2f2', ring: '#fca5a5' },
+  spices:        { primary: '#c0392b', gradient: 'linear-gradient(135deg,#c0392b 0%,#e8792b 100%)', light: '#fdf6ec', ring: '#f0b27a' },
 };
 
 const DEFAULT_THEME = THEMES['barber'];
@@ -114,9 +115,10 @@ export default function ShopReviewPage({ params }) {
         .eq('id', shopId)
         .single();
       if (error || !data) { setNotFound(true); return; }
-      // Hospitals have their own dedicated review page
-      if (data.business_type === 'hospital') {
-        router.replace(`/review/hospital/${shopId}`);
+      // Some categories (hospital, spices, ...) have their own dedicated review page
+      const cfgForType = CATEGORY_CONFIG[data.business_type];
+      if (cfgForType?.reviewPath && cfgForType.reviewPath !== 'shop') {
+        router.replace(`/review/${cfgForType.reviewPath}/${shopId}`);
         return;
       }
       const shopData = dbToShop(data);
