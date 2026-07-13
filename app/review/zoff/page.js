@@ -132,6 +132,10 @@ const ANIM = `
   .anim-up  { animation: fadeInUp 0.45s ease-out both; }
   .anim-pop { animation: popIn 0.35s cubic-bezier(.22,.68,0,1.2) both; }
   .anim-cel { animation: celebrate 0.7s ease-in-out; }
+  * { -webkit-tap-highlight-color: transparent; }
+  html, body { overflow-x: hidden; touch-action: manipulation; }
+  button { touch-action: manipulation; }
+  input, textarea, select { font-size: 16px !important; } /* stops iOS Safari auto-zoom on focus */
   @media(max-width:640px){
     .review-card { padding:20px !important; }
     .liked-grid  { grid-template-columns:1fr !important; }
@@ -216,10 +220,39 @@ export default function ZoffReviewPage() {
 
   const activeReview = mode === 'manual' ? polishedReview : generatedReview;
 
+  // Robust copy that works even inside WhatsApp/Instagram in-app browsers,
+  // where the modern Clipboard API is sometimes unavailable or blocked.
+  const copyToClipboard = async (text) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) { /* fall through to legacy method */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  };
+
   const copyAndOpen = async () => {
-    await navigator.clipboard.writeText(activeReview);
-    setCopied('copied');
-    setTimeout(() => { window.open(googleUrl, '_blank'); setCopied(''); }, 600);
+    const ok = await copyToClipboard(activeReview);
+    setCopied(ok ? 'copied' : 'failed');
+    // Open synchronously (not in a setTimeout) so in-app browsers
+    // (WhatsApp/Instagram) don't treat it as a blocked popup.
+    const win = window.open(googleUrl, '_blank', 'noopener,noreferrer');
+    if (!win) window.location.href = googleUrl; // popup blocked — fall back to same-tab nav
+    setTimeout(() => setCopied(''), 2500);
   };
 
   const regenerate = () => {
@@ -250,10 +283,10 @@ export default function ZoffReviewPage() {
   const ratingObj = RATING_OPTIONS.find((r) => r.key === rating);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg,#fdf6ec 0%,#fef3e7 50%,#fff8f0 100%)', padding: '0 0 80px', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg,#fdf6ec 0%,#fef3e7 50%,#fff8f0 100%)', padding: '0 0 calc(80px + env(safe-area-inset-bottom))', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif' }}>
       <style>{ANIM}</style>
 
-      <div style={{ background: THEME.gradient, padding: '0 20px' }}>
+      <div style={{ background: THEME.gradient, padding: '0 20px', paddingTop: 'env(safe-area-inset-top)' }}>
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '28px 0 32px', textAlign: 'center' }}>
           <div style={{ width: 84, height: 84, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.6)', marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)' }}>
             <span style={{ fontSize: 34 }}>🌶️</span>
@@ -466,8 +499,13 @@ export default function ZoffReviewPage() {
 
             <button onClick={copyAndOpen}
               style={{ width: '100%', padding: '16px', borderRadius: 14, background: '#16a34a', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: 'pointer', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              {copied === 'copied' ? '✅ Copied! Opening Google...' : '📋 Copy & Open Google Review'}
+              {copied === 'copied' ? '✅ Copied! Opening Google...' : copied === 'failed' ? '↗️ Opening Google — please paste manually' : '📋 Copy & Open Google Review'}
             </button>
+            {copied === 'failed' && (
+              <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', marginTop: -4, marginBottom: 10 }}>
+                Couldn't auto-copy on this browser — select the review text above and copy it manually.
+              </p>
+            )}
 
             <button onClick={regenerate}
               style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'transparent', color: '#64748b', border: '2px solid #e2e8f0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 10 }}>
