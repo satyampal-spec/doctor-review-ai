@@ -17,7 +17,7 @@ const ZOFF_FALLBACK = {
   business_type: 'spices',
   sub_type: 'Multi-category Spice Brand',
   location: 'Bengaluru',
-  google_profile_url: 'https://www.google.com/search?q=ZOFF+Foods+Reviews',
+  google_profile_url: 'https://share.google/wUdso59ACgFz1CQdE',
   photo_url: '',
   scans: 0,
   reviews_generated: 0,
@@ -372,7 +372,7 @@ export default function ZoffReviewPage() {
                     style={{ padding: '20px 22px', borderRadius: 18, border: '2px solid #f5e3d0', background: '#fafafa', cursor: 'pointer', textAlign: 'left' }}>
                     <div style={{ fontSize: 24, marginBottom: 6 }}>✏️</div>
                     <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Write My Own</div>
-                    <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words — we'll fix the grammar and turn it into a full, well-formed review.</div>
+                    <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words — we'll make it easy for you to turn it into a full, ready-to-post review.</div>
                   </button>
                 </div>
               </>
@@ -418,7 +418,7 @@ export default function ZoffReviewPage() {
                 </div>
 
                 <div style={{ background: '#f8fafc', borderRadius: 16, padding: 16, marginBottom: 14, border: '1px solid #e2e8f0' }}>
-                  <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 600 }}>💡 TIP — Just write naturally, even if grammar isn't perfect.</p>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 600 }}>💡 TIP — Just write naturally, we'll make it easy for you.</p>
                   <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>e.g. "the spices were good" → we'll turn it into a full review using what you liked in step 2.</p>
                 </div>
 
