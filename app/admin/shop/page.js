@@ -159,7 +159,7 @@ export default function AddShopPage() {
           <div>
             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Business Category</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {Object.entries(CATEGORY_CONFIG).map(([key, cfg]) => (
+              {Object.entries(CATEGORY_CONFIG).filter(([key]) => key !== 'spices').map(([key, cfg]) => (
                 <button
                   key={key}
                   type="button"
