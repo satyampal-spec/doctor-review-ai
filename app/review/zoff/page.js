@@ -404,7 +404,7 @@ export default function ZoffReviewPage() {
                   <button onClick={() => setMode('manual')}
                     style={{ padding: '20px 22px', borderRadius: 18, border: '2px solid #f5e3d0', background: '#fafafa', cursor: 'pointer', textAlign: 'left' }}>
                     <div style={{ fontSize: 24, marginBottom: 6 }}>✏️</div>
-                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Write My Own</div>
+                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Write In Your Own Words</div>
                     <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words, we'll make it easy for you to turn it into a full, ready-to-post review.</div>
                   </button>
                 </div>

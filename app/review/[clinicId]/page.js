@@ -532,13 +532,13 @@ export default function ReviewPage({ params }) {
                 className="w-full p-5 rounded-2xl border-2 border-blue-100 bg-blue-50 hover:border-blue-400 transition-all text-left">
                 <div className="text-2xl mb-1">✨</div>
                 <div className="font-bold text-gray-900">Auto-Generate Review</div>
-                <div className="text-gray-500 text-sm mt-1">AI writes a perfect, SEO-optimised review for you in seconds.</div>
+                <div className="text-gray-500 text-sm mt-1">Writes a ready-to-post review for you in seconds.</div>
               </button>
               <button onClick={() => setMode('manual')}
                 className="w-full p-5 rounded-2xl border-2 border-gray-100 bg-white hover:border-blue-400 transition-all text-left">
                 <div className="text-2xl mb-1">✏️</div>
-                <div className="font-bold text-gray-900">Write My Own</div>
-                <div className="text-gray-500 text-sm mt-1">Type your experience in your own words, grammar and structure will be polished automatically.</div>
+                <div className="font-bold text-gray-900">Write In Your Own Words</div>
+                <div className="text-gray-500 text-sm mt-1">Type your experience in your own words, we'll fix the grammar and turn it into a full, well-formed review.</div>
               </button>
             </div>
             <button onClick={() => setStep(2)} className="w-full btn-secondary text-sm">← Back</button>

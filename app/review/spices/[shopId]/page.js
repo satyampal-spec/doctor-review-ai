@@ -386,7 +386,7 @@ export default function SpicesReviewPage({ params }) {
                   <button onClick={() => setMode('manual')}
                     style={{ padding: '20px 22px', borderRadius: 18, border: '2px solid #f5e3d0', background: '#fafafa', cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
                     <div style={{ fontSize: 24, marginBottom: 6 }}>✏️</div>
-                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Write My Own</div>
+                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Write In Your Own Words</div>
                     <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words, we'll fix the grammar and turn it into a full, well-formed review.</div>
                   </button>
                 </div>
