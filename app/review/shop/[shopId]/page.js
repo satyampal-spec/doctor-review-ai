@@ -365,7 +365,7 @@ export default function ShopReviewPage({ params }) {
                       </div>
                       <Stars count={RATING_OPTIONS.find((r) => r.key === rating)?.stars || 5} />
                     </div>
-                    <p className="text-gray-700 text-sm leading-relaxed mb-4 italic">"{text}"</p>
+                    <p className="text-gray-700 text-sm leading-relaxed mb-4">{text}</p>
                     <button
                       onClick={() => copyAndOpen(`${activeLang}-${rt.key}`, text)}
                       className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all duration-200 active:scale-95"
@@ -384,7 +384,7 @@ export default function ShopReviewPage({ params }) {
           <div className="mb-4 p-4 rounded-2xl anim-fadeInUp" style={{ animationDelay: '0.5s', background: '#fffbeb', border: '1px solid #fcd34d' }}>
             <h4 className="font-bold text-amber-800 mb-2 text-sm">📋 How to post your review</h4>
             <ol className="text-sm text-amber-700 space-y-1 list-decimal list-inside">
-              <li>Tap the Copy button — review copies to clipboard</li>
+              <li>Tap the Copy button, review copies to clipboard</li>
               <li>Google opens automatically in a new tab</li>
               <li>Click "Write a review", paste it, give 5 stars & submit</li>
             </ol>

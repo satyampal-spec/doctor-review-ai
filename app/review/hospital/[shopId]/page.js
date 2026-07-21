@@ -99,17 +99,17 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
   if (lang === 'kannada') {
     const KSO = [
       `${n} ge hogi tumba satisfied aadhe.`,`${n} nalli exceptional experience sikkithu.`,
-      `${n} nalli visit maadide — thumba impressed aadhe.`,`${n} ge hogi tumba khushi aadhe.`,
-      `Nanna patient anubhava ${n} nalli tumba olle aaythu.`,`${n} ge hogalu decide maadide — best decision.`,
-      `Maatu keliddu satya — ${n} tumba olle hospital.`,`${n} nalli doctors tumba experienced.`,
+      `${n} nalli visit maadide, thumba impressed aadhe.`,`${n} ge hogi tumba khushi aadhe.`,
+      `Nanna patient anubhava ${n} nalli tumba olle aaythu.`,`${n} ge hogalu decide maadide, best decision.`,
+      `Maatu keliddu satya, ${n} tumba olle hospital.`,`${n} nalli doctors tumba experienced.`,
       `${n} ge recent agi hogi satisfied aadhe.`,`${n} nalli care sikkiddu tumba outstanding.`,
     ];
     const KSM = [
       `Doctors highly experienced, facilities tumba clean. ${asp}`,
-      `Expert doctors, caring staff, hygienic environment — yella tumba good. ${asp}`,
+      `Expert doctors, caring staff, hygienic environment, yella tumba good. ${asp}`,
       `Diagnosis quick aagi sigtu. ${asp}Doctors patients jote carefully maatnadtare.`,
       `${asp}Hospital thumba hygienic, modern equipment kuda ide.`,
-      `Treatment cost kuda reasonable — bilkul extra charges illa. ${asp}`,
+      `Treatment cost kuda reasonable, bilkul extra charges illa. ${asp}`,
       `Staff tumba friendly, doctors thorough examination maadtare. ${asp}`,
       `Wait time kammi, facilities modern, doctors experienced. ${asp}`,
       `${asp}Nurses tumba caring, doctors tumba knowledgeable.`,
@@ -117,30 +117,30 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
     const KSC = [
       `Bengaluru alli best hospital antha helbahudu. Definitely recommend maadthene.`,
       `Trusted healthcare beku andre ee hospital ge hogi. Highly recommend.`,
-      `Bengaluru alli quality healthcare ge best choice — ${n}.`,
-      `5 stars kodthene — ${n} deserve maadthene.`,
+      `Bengaluru alli quality healthcare ge best choice, ${n}.`,
+      `5 stars kodthene, ${n} deserve maadthene.`,
       `Family mattu friends ge definitely suggest maadthene.`,
       `Bengaluru alli ee tarada hospital sigodu rare. Tumba recommend.`,
     ];
     const KMO = [
       `${n} ge ${loc} nalli hogi nanu tumba khushi aadhe.`,
       `Nanu ${n} nalli treatment tegolide, experience tumba better aagittu.`,
-      `${n} ge hogalu decide maadide — best decision tumba.`,
+      `${n} ge hogalu decide maadide, best decision tumba.`,
       `${loc} nalli ${n} nalli consult maadide, tumba satisfied.`,
-      `Nanna family member ge ${n} nalli treatment — excellent experience.`,
-      `${n} guri keliddu, hogi confirmed aagide — tumba olle hospital.`,
+      `Nanna family member ge ${n} nalli treatment, excellent experience.`,
+      `${n} guri keliddu, hogi confirmed aagide, tumba olle hospital.`,
     ];
     const KMM = [
       `Doctorgalu patients janara haatra tumba carefully maatnadtare. ${asp}Hospital thumba hygienic, modern equipment kuda ide.`,
       `${asp}Nursing staff tumba caring. Hospital clean, comfortable. Doctors time tegondu explain maadtare.`,
-      `Treatment cost kuda reasonable — bilkul extra charges illa. ${asp}Facilities tumba advanced, doctors highly qualified.`,
+      `Treatment cost kuda reasonable, bilkul extra charges illa. ${asp}Facilities tumba advanced, doctors highly qualified.`,
       `${asp}Registration quick, doctors time ge sigthare. Yella process smooth aagi nadte.`,
       `Doctors tumba experienced, diagnosis accurate. ${asp}Hospital hygienic, staff tumba helpful.`,
       `${asp}Emergency situations alli kuda prompt response sigtu. ${n} mele trust ide.`,
     ];
     const KMC = [
-      `Bengaluru alli ee tarada trusted healthcare sigola kashta. ${n} — best hospital.`,
-      `Affordable healthcare beku antha alle bandhere — ${n} perfect choice. Highly recommend.`,
+      `Bengaluru alli ee tarada trusted healthcare sigola kashta. ${n}, best hospital.`,
+      `Affordable healthcare beku antha alle bandhere, ${n} perfect choice. Highly recommend.`,
       `${n} ge definitely return maadthene mattu everyone ge recommend maadthene.`,
       `Bengaluru alli quality medical care beku ante ${n} ge hogi.`,
       `5 stars fullaa kodthene. ${n} deserve maadthene ella.`,
@@ -152,20 +152,20 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
 
   // ── ENGLISH SHORT (15×10×8 = 1200 unique) ───────────────────
   const SO = [
-    `Visited ${n} in ${loc} recently — truly impressed.`,
+    `Visited ${n} in ${loc} recently, truly impressed.`,
     `Outstanding experience at ${n}. Highly recommend.`,
     `Really glad I chose ${n} for my healthcare needs.`,
     `Just had a great experience at ${n} in ${loc}.`,
-    `Can't recommend ${n} enough — absolutely excellent.`,
+    `Can't recommend ${n} enough, absolutely excellent.`,
     `My visit to ${n} in ${loc} was exceptional.`,
-    `Brought my father to ${n} — the care was outstanding.`,
+    `Brought my father to ${n}, the care was outstanding.`,
     `First time at ${n} and I am thoroughly impressed.`,
     `Quick visit to ${n} but completely satisfied.`,
-    `Had treatment done at ${n} recently — very pleased.`,
-    `Consulted at ${n} last week — brilliant experience.`,
-    `My family member was treated at ${n} — excellent care.`,
-    `Came to ${n} in ${loc} with high expectations — they exceeded them.`,
-    `${n} in ${loc} — genuinely one of the best hospital experiences I've had.`,
+    `Had treatment done at ${n} recently, very pleased.`,
+    `Consulted at ${n} last week, brilliant experience.`,
+    `My family member was treated at ${n}, excellent care.`,
+    `Came to ${n} in ${loc} with high expectations, they exceeded them.`,
+    `${n} in ${loc}, genuinely one of the best hospital experiences I've had.`,
     `So relieved I chose ${n} for my treatment.`,
   ];
   const SM = [
@@ -181,7 +181,7 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
     `Modern facility, top-notch doctors, and very friendly staff. ${asp}`,
   ];
   const SC = [
-    `One of the best hospitals in Bengaluru — highly recommend.`,
+    `One of the best hospitals in Bengaluru, highly recommend.`,
     `Definitely my go-to hospital for healthcare in Bengaluru.`,
     `5 stars without any hesitation.`,
     `Strongly recommend to family and friends in Bengaluru.`,
@@ -198,10 +198,10 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
     `My experience at ${n} was genuinely outstanding from start to finish.`,
     `I was referred to ${n} in ${loc} and couldn't be happier with the decision.`,
     `I visited ${n} for a routine checkup and left thoroughly impressed.`,
-    `Took my mother to ${n} in ${loc} — the care she received was exceptional.`,
+    `Took my mother to ${n} in ${loc}, the care she received was exceptional.`,
     `After hearing so many good things about ${n}, I decided to consult there.`,
     `I visited ${n} for the first time last month and was very pleasantly surprised.`,
-    `Needed medical attention urgently and went to ${n} — excellent decision.`,
+    `Needed medical attention urgently and went to ${n}, excellent decision.`,
     `I have visited several hospitals in Bengaluru, but ${n} stands apart.`,
     `When my family needed quality medical care, we chose ${n} in ${loc}.`,
     `I chose ${n} in ${loc} for my treatment and it was absolutely the right call.`,
@@ -210,13 +210,13 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
   const MM = [
     `The doctors are highly qualified and took time to explain my condition clearly, giving me complete confidence in the treatment. ${asp}The facility is clean, modern, and the entire process from registration to diagnosis was smooth and efficient.`,
     `The entire team was professional, warm, and efficient. ${asp}From registration to discharge, everything was handled with exceptional care and precision.`,
-    `What impressed me most was the transparency — no hidden charges, clear communication at every step. ${asp}The hospital is immaculate and very well-organised.`,
+    `What impressed me most was the transparency, no hidden charges, clear communication at every step. ${asp}The hospital is immaculate and very well-organised.`,
     `The doctors speak to you as a person, not just a patient. ${asp}They listen carefully, diagnose precisely, and explain everything in simple, clear terms.`,
     `The facility is immaculately clean, well-organised, and equipped with modern medical technology. ${asp}The staff is professional and the service is genuinely efficient.`,
     `The nursing staff was especially caring and attentive. ${asp}They went out of their way to make my family member comfortable throughout the entire stay.`,
-    `I was struck by how efficiently the hospital is run — minimal waiting, smooth processes, and very kind staff. ${asp}`,
+    `I was struck by how efficiently the hospital is run, minimal waiting, smooth processes, and very kind staff. ${asp}`,
     `The specialist I consulted was extremely knowledgeable and gave a thorough examination without rushing. ${asp}This level of care is genuinely rare.`,
-    `${asp}What sets ${n} apart is the combination of expertise, compassion, and affordability — all under one roof.`,
+    `${asp}What sets ${n} apart is the combination of expertise, compassion, and affordability, all under one roof.`,
     `The registration was quick, the doctor was on time, and the treatment was thorough. ${asp}No unnecessary procedures, no surprise charges whatsoever.`,
   ];
   const MC = [
@@ -224,7 +224,7 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
     `${n} is definitely among the best hospitals in Bengaluru. Would not hesitate to return or recommend.`,
     `I would recommend ${n} to anyone looking for reliable, expert healthcare in Bengaluru.`,
     `If you need quality medical care in Bengaluru, ${n} is absolutely the right choice.`,
-    `Five stars — ${n} earns every one for their care, professionalism, and transparency.`,
+    `Five stars, ${n} earns every one for their care, professionalism, and transparency.`,
     `${n} is genuinely one of Bengaluru's finest hospitals. Strongly recommend to everyone.`,
     `I will be returning to ${n} for all future healthcare needs. Highly recommended.`,
     `For anyone seeking a hospital that genuinely cares, ${n} in Bengaluru is the answer.`,
@@ -243,18 +243,18 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
     `My family has been visiting ${n} in ${loc} and the standard of care is consistently excellent.`,
   ];
   const DM = [
-    `From the first point of contact to the final follow-up, everything was handled with great care and professionalism. ${asp}The doctors here are not just highly experienced — they take real time to listen, diagnose carefully, and explain every step of treatment clearly. The nursing staff is compassionate and attentive. The facility is immaculately clean, well-organised, and equipped with modern technology. What also impressed me was the transparency in billing — affordable, with no hidden charges.`,
-    `${asp}The level of care and attention I received was outstanding. The doctors are exceptionally skilled and speak to you as a human being — not just a patient. They take time to explain the diagnosis in simple terms, which is genuinely reassuring. The hospital is spotlessly clean, the environment is calm, and equipment is modern. The waiting time was minimal and the appointment process was smooth. Treatment costs were very reasonable and completely transparent.`,
-    `The doctors at ${n} are what make it stand out. ${asp}They are thorough, patient, and extremely knowledgeable. The nursing staff mirrors that dedication — attentive, kind, and professional. The hospital environment is hygienic and comfortable. Emergency response is quick and effective. Billing is transparent and very reasonable compared to other hospitals in Bengaluru.`,
+    `From the first point of contact to the final follow-up, everything was handled with great care and professionalism. ${asp}The doctors here are not just highly experienced, they take real time to listen, diagnose carefully, and explain every step of treatment clearly. The nursing staff is compassionate and attentive. The facility is immaculately clean, well-organised, and equipped with modern technology. What also impressed me was the transparency in billing, affordable, with no hidden charges.`,
+    `${asp}The level of care and attention I received was outstanding. The doctors are exceptionally skilled and speak to you as a human being, not just a patient. They take time to explain the diagnosis in simple terms, which is genuinely reassuring. The hospital is spotlessly clean, the environment is calm, and equipment is modern. The waiting time was minimal and the appointment process was smooth. Treatment costs were very reasonable and completely transparent.`,
+    `The doctors at ${n} are what make it stand out. ${asp}They are thorough, patient, and extremely knowledgeable. The nursing staff mirrors that dedication, attentive, kind, and professional. The hospital environment is hygienic and comfortable. Emergency response is quick and effective. Billing is transparent and very reasonable compared to other hospitals in Bengaluru.`,
     `${asp}I have been to many hospitals in Bengaluru over the years, but ${n} is on a different level entirely. The infrastructure is modern, the staff is highly trained, and the overall patient experience is carefully thought out. Doctors spend quality time with each patient and the communication is excellent. There were no unexpected charges and no unnecessary procedures recommended.`,
-    `What sets ${n} apart is its culture of genuine care. ${asp}Every person I interacted with — from the reception staff to the senior doctors — was professional, courteous, and focused on patient wellbeing. The facility is clean, the processes are efficient, and the medical expertise is excellent. I was particularly impressed by how transparent they are about treatment plans and costs.`,
+    `What sets ${n} apart is its culture of genuine care. ${asp}Every person I interacted with, from the reception staff to the senior doctors, was professional, courteous, and focused on patient wellbeing. The facility is clean, the processes are efficient, and the medical expertise is excellent. I was particularly impressed by how transparent they are about treatment plans and costs.`,
     `I visited ${n} for a serious concern and left feeling genuinely cared for. ${asp}The doctors were thorough, spending significant time understanding my history before explaining the diagnosis in detail. The nursing staff was compassionate and responsive. The hospital itself is modern, hygienic, and well-maintained. I had visited other hospitals in ${loc} before, but the quality of care at ${n} is significantly better.`,
-    `${asp}The professionalism at ${n} is truly commendable. From the moment you walk in, there is a clear sense that the hospital is focused on patient wellbeing above everything else. Doctors are experienced and empathetic. Staff is helpful and courteous. The facility is clean and modern. What also stood out was that the billing was completely transparent — exactly what was quoted, no surprises at all.`,
+    `${asp}The professionalism at ${n} is truly commendable. From the moment you walk in, there is a clear sense that the hospital is focused on patient wellbeing above everything else. Doctors are experienced and empathetic. Staff is helpful and courteous. The facility is clean and modern. What also stood out was that the billing was completely transparent, exactly what was quoted, no surprises at all.`,
     `My experience at ${n} restored my faith in healthcare in Bengaluru. ${asp}The specialist who treated me was not only highly skilled but also took time to ensure I completely understood my diagnosis and treatment plan. The hospital is extremely well-maintained, the nursing care is attentive, and the overall environment is calm and reassuring.`,
   ];
   const DC = [
     `For anyone in Bengaluru looking for quality, trustworthy, and affordable healthcare, ${n} is absolutely the right choice. I would not hesitate to recommend it to family and friends.`,
-    `I have visited other hospitals in ${loc} and Bengaluru before, but ${n} stands out for its unique combination of expertise, empathy, and affordability. Highly recommended — 5 stars without hesitation.`,
+    `I have visited other hospitals in ${loc} and Bengaluru before, but ${n} stands out for its unique combination of expertise, empathy, and affordability. Highly recommended, 5 stars without hesitation.`,
     `${n} sets a benchmark for healthcare quality in Bengaluru. Whether a routine consultation or a complex procedure, you are in very safe and capable hands here.`,
     `I strongly recommend ${n} to anyone in Bengaluru looking for reliable, compassionate, and expert medical care. It genuinely restores your confidence in healthcare.`,
     `Five stars is not enough for ${n}. The quality of care, the professionalism of the staff, and the affordability of treatment make it genuinely one of the best hospitals in Bengaluru.`,
@@ -308,7 +308,7 @@ function polishManualReview(rawText, liked, hospitalName, location) {
   const closings = [
     `I would highly recommend ${hospitalName} to anyone seeking quality and trusted healthcare in Bengaluru.`,
     `If you're looking for reliable and affordable healthcare in Bengaluru, ${hospitalName} is a great choice.`,
-    `${hospitalName} is genuinely one of the best hospitals in Bengaluru — highly recommend.`,
+    `${hospitalName} is genuinely one of the best hospitals in Bengaluru, highly recommend.`,
   ];
   const closing = closings[Math.floor(Math.random() * closings.length)];
 
@@ -524,7 +524,7 @@ export default function HospitalReviewPage({ params }) {
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>💙</div>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>What did you like?</h2>
-              <p style={{ color: '#64748b', fontSize: 13, marginTop: 6 }}>Select all that apply — makes your review more helpful.</p>
+              <p style={{ color: '#64748b', fontSize: 13, marginTop: 6 }}>Select all that apply, makes your review more helpful.</p>
             </div>
             <div className="liked-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
               {LIKED_OPTIONS.map(opt => {
@@ -574,7 +574,7 @@ export default function HospitalReviewPage({ params }) {
                     onMouseOut={e => e.currentTarget.style.borderColor = '#e0f2fe'}>
                     <div style={{ fontSize: 24, marginBottom: 6 }}>✏️</div>
                     <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Write My Own</div>
-                    <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words — AI will polish the grammar and frame it perfectly.</div>
+                    <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words, AI will polish the grammar and frame it perfectly.</div>
                   </button>
                 </div>
               </>
@@ -636,7 +636,7 @@ export default function HospitalReviewPage({ params }) {
                 </div>
 
                 <div style={{ background: '#f8fafc', borderRadius: 16, padding: 16, marginBottom: 14, border: '1px solid #e2e8f0' }}>
-                  <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 600 }}>💡 TIP — Just write naturally, even if grammar isn't perfect.</p>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 600 }}>💡 TIP, Just write naturally, even if grammar isn't perfect.</p>
                   <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>e.g. "dr pramod is good he is professional" → AI will structure it properly.</p>
                 </div>
 

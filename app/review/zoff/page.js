@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { generateShopReview, CATEGORY_CONFIG } from '@/lib/shopReviewGenerator';
 
-// ── This page is exclusive to ZOFF Foods — not a general-purpose category.
+// ── This page is exclusive to ZOFF Foods, not a general-purpose category.
 //    Fixed identity, fixed branding, self-provisions its own Supabase row
 //    on first load so the review-uniqueness counter works without anyone
 //    having to register it through the generic /admin/shop flow. ──────────
@@ -38,7 +38,7 @@ const LIKED_OPTIONS = CONFIG.likedOptions;
 
 const LIKED_PHRASES = {
   aroma:      'the strong, fresh aroma the moment I opened the pack',
-  purity:     'how pure it felt — no adulteration or added colour',
+  purity:     'how pure it felt, no adulteration or added colour',
   packaging:  'the resealable zip-lock packaging that keeps it fresh',
   cool_grind: 'that it tasted freshly ground, not burnt',
   consistent: 'how consistent the quality has been across orders',
@@ -113,7 +113,7 @@ function polishManualZoffReview(rawText, liked, shopName) {
   const closings = [
     `I would highly recommend ${name} to anyone looking for fresh, reliable spices.`,
     `If you're looking for good quality spices online, ${name} is a great choice.`,
-    `${name} is genuinely one of the better spice brands I've ordered from — highly recommend.`,
+    `${name} is genuinely one of the better spice brands I've ordered from, highly recommend.`,
     `Will be ordering from ${name} again.`,
   ];
 
@@ -251,7 +251,7 @@ export default function ZoffReviewPage() {
     // Open synchronously (not in a setTimeout) so in-app browsers
     // (WhatsApp/Instagram) don't treat it as a blocked popup.
     const win = window.open(googleUrl, '_blank', 'noopener,noreferrer');
-    if (!win) window.location.href = googleUrl; // popup blocked — fall back to same-tab nav
+    if (!win) window.location.href = googleUrl; // popup blocked, fall back to same-tab nav
     setTimeout(() => setCopied(''), 2500);
   };
 
@@ -334,7 +334,7 @@ export default function ZoffReviewPage() {
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>🌶️</div>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>What did you like?</h2>
-              <p style={{ color: '#64748b', fontSize: 13, marginTop: 6 }}>Pick 2–4 — includes your top products.</p>
+              <p style={{ color: '#64748b', fontSize: 13, marginTop: 6 }}>Pick 2–4, includes your top products.</p>
             </div>
             <div className="liked-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
               {LIKED_OPTIONS.map((opt) => {
@@ -405,7 +405,7 @@ export default function ZoffReviewPage() {
                     style={{ padding: '20px 22px', borderRadius: 18, border: '2px solid #f5e3d0', background: '#fafafa', cursor: 'pointer', textAlign: 'left' }}>
                     <div style={{ fontSize: 24, marginBottom: 6 }}>✏️</div>
                     <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Write My Own</div>
-                    <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words — we'll make it easy for you to turn it into a full, ready-to-post review.</div>
+                    <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words, we'll make it easy for you to turn it into a full, ready-to-post review.</div>
                   </button>
                 </div>
               </>
@@ -451,7 +451,7 @@ export default function ZoffReviewPage() {
                 </div>
 
                 <div style={{ background: '#f8fafc', borderRadius: 16, padding: 16, marginBottom: 14, border: '1px solid #e2e8f0' }}>
-                  <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 600 }}>💡 TIP — Just write naturally, we'll make it easy for you.</p>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 600 }}>💡 TIP, Just write naturally, we'll make it easy for you.</p>
                   <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>e.g. "the spices were good" → we'll turn it into a full review using what you liked in step 2.</p>
                 </div>
 
@@ -499,11 +499,11 @@ export default function ZoffReviewPage() {
 
             <button onClick={copyAndOpen}
               style={{ width: '100%', padding: '16px', borderRadius: 14, background: '#16a34a', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: 'pointer', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              {copied === 'copied' ? '✅ Copied! Opening Google...' : copied === 'failed' ? '↗️ Opening Google — please paste manually' : '📋 Copy & Open Google Review'}
+              {copied === 'copied' ? '✅ Copied! Opening Google...' : copied === 'failed' ? '↗️ Opening Google, please paste manually' : '📋 Copy & Open Google Review'}
             </button>
             {copied === 'failed' && (
               <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', marginTop: -4, marginBottom: 10 }}>
-                Couldn't auto-copy on this browser — select the review text above and copy it manually.
+                Couldn't auto-copy on this browser, select the review text above and copy it manually.
               </p>
             )}
 

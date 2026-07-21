@@ -78,7 +78,7 @@ function buildAspectSentence(liked) {
 
 // ── Manual review polisher ──────────────────────────────────────
 // Fixes grammar/capitalisation on whatever the patient typed, then wraps it
-// with an intro + aspect sentence + closing — always pulling the doctor's
+// with an intro + aspect sentence + closing, always pulling the doctor's
 // *actual* specialization (ENT, Dermatologist, etc.) instead of ever hardcoding
 // "GP" / General Physician, which was the bug reported for ENT reviews.
 function polishManualReview(rawText, liked, doctorName, clinicName, specialization, location) {
@@ -100,7 +100,7 @@ function polishManualReview(rawText, liked, doctorName, clinicName, specializati
   // Add period at end if missing
   if (!/[.!?]$/.test(text)) text += '.';
 
-  // Light enhancement — small, safe wording upgrades only
+  // Light enhancement, small, safe wording upgrades only
   text = text
     .replace(/\bis good\b/gi, 'is very good')
     .replace(/\bvery very\b/gi, 'very')
@@ -125,7 +125,7 @@ function polishManualReview(rawText, liked, doctorName, clinicName, specializati
   const closings = [
     `I would highly recommend ${doctorName} to anyone in ${loc} looking for a trusted ${specLabel}.`,
     `If you're looking for a reliable ${specLabel} in ${loc}, ${doctorName} at ${clinicName} is a great choice.`,
-    `${doctorName} at ${clinicName} is genuinely one of the best ${specLabel === 'doctor' ? 'doctors' : specLabel + 's'} in ${loc} — highly recommend.`,
+    `${doctorName} at ${clinicName} is genuinely one of the best ${specLabel === 'doctor' ? 'doctors' : specLabel + 's'} in ${loc}, highly recommend.`,
   ];
   const closing = closings[Math.floor(Math.random() * closings.length)];
 
@@ -319,7 +319,7 @@ export default function ReviewPage({ params }) {
               <span className="badge bg-blue-100 text-blue-700 text-xs">Your Review</span>
               <Stars count={RATING_OPTIONS.find((r) => r.key === rating)?.stars || 5} />
             </div>
-            <p className="text-gray-700 text-sm leading-relaxed mb-4">"{polishedReview}"</p>
+            <p className="text-gray-700 text-sm leading-relaxed mb-4">{polishedReview}</p>
             <button
               onClick={() => copyAndOpen('manual', polishedReview)}
               className={`w-full btn-primary text-sm py-3 ${isCopied ? 'bg-green-600 hover:bg-green-700' : ''}`}
@@ -334,7 +334,7 @@ export default function ReviewPage({ params }) {
               <li>The review is copied to your clipboard</li>
               <li>Google opens automatically in a new tab</li>
               <li>Click "Write a review", paste your review, select 5 stars</li>
-              <li>Hit Submit — done! 🎉</li>
+              <li>Hit Submit, done! 🎉</li>
             </ol>
           </div>
 
@@ -421,7 +421,7 @@ export default function ReviewPage({ params }) {
                     </div>
                     <Stars count={RATING_OPTIONS.find((r) => r.key === rating)?.stars || 5} />
                   </div>
-                  <p className="text-gray-700 text-sm leading-relaxed mb-4">"{text}"</p>
+                  <p className="text-gray-700 text-sm leading-relaxed mb-4">{text}</p>
 
                   <button
                     onClick={() => copyAndOpen(`${activeLang}-${rt.key}`, text)}
@@ -441,7 +441,7 @@ export default function ReviewPage({ params }) {
               <li>The review is copied to your clipboard</li>
               <li>Google opens automatically in a new tab</li>
               <li>Click "Write a review", paste your review, select 5 stars</li>
-              <li>Hit Submit — done! 🎉</li>
+              <li>Hit Submit, done! 🎉</li>
             </ol>
           </div>
 
@@ -495,7 +495,7 @@ export default function ReviewPage({ params }) {
         {step === 2 && (
           <div className="card">
             <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">What did you like most?</h2>
-            <p className="text-gray-400 text-sm text-center mb-5">Select all that apply — the more you select, the better your review</p>
+            <p className="text-gray-400 text-sm text-center mb-5">Select all that apply, the more you select, the better your review</p>
             <div className="grid grid-cols-2 gap-2.5 mb-6">
               {LIKED_OPTIONS.map((opt) => (
                 <button key={opt.key}
@@ -538,7 +538,7 @@ export default function ReviewPage({ params }) {
                 className="w-full p-5 rounded-2xl border-2 border-gray-100 bg-white hover:border-blue-400 transition-all text-left">
                 <div className="text-2xl mb-1">✏️</div>
                 <div className="font-bold text-gray-900">Write My Own</div>
-                <div className="text-gray-500 text-sm mt-1">Type your experience in your own words — grammar and structure will be polished automatically.</div>
+                <div className="text-gray-500 text-sm mt-1">Type your experience in your own words, grammar and structure will be polished automatically.</div>
               </button>
             </div>
             <button onClick={() => setStep(2)} className="w-full btn-secondary text-sm">← Back</button>
@@ -583,10 +583,10 @@ export default function ReviewPage({ params }) {
           <div className="card">
             <button onClick={() => setMode(null)} className="text-blue-600 text-sm font-semibold mb-4">← Change mode</button>
             <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">Write Your Experience</h2>
-            <p className="text-gray-400 text-sm text-center mb-4">Doctor's name, what was good, how you felt — grammar not required.</p>
+            <p className="text-gray-400 text-sm text-center mb-4">Doctor's name, what was good, how you felt, grammar not required.</p>
 
             <div className="bg-gray-50 rounded-2xl p-4 mb-4 border border-gray-100">
-              <p className="text-xs text-gray-500 font-semibold mb-1">💡 TIP — Just write naturally, even if grammar isn't perfect.</p>
+              <p className="text-xs text-gray-500 font-semibold mb-1">💡 TIP, Just write naturally, even if grammar isn't perfect.</p>
               <p className="text-xs text-gray-400">e.g. "dr pramod is good he is professional" → will be structured properly, using {clinic.specialization} correctly.</p>
             </div>
 

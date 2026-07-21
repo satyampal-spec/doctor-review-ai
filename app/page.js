@@ -6,7 +6,7 @@ const features = [
   {
     icon: '📱',
     title: 'Scan QR Code',
-    desc: 'Customer scans the QR code placed at your counter — no app needed.',
+    desc: 'Customer scans the QR code placed at your counter, no app needed.',
   },
   {
     icon: '✅',
@@ -16,7 +16,7 @@ const features = [
   {
     icon: '🤖',
     title: 'AI Generates Review',
-    desc: 'Our AI crafts 3 authentic, personalised review options — short, medium, and detailed.',
+    desc: 'Our AI crafts 3 authentic, personalised review options, short, medium, and detailed.',
   },
   {
     icon: '⭐',
@@ -56,19 +56,19 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* Nav */}
       <nav className="border-b border-gray-100 bg-white/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">⭐</span>
-            <span className="font-bold text-xl text-blue-700">ReviewAI Bengaluru</span>
+        <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-2xl shrink-0">⭐</span>
+            <span className="font-bold text-base sm:text-xl text-blue-700 truncate">ReviewAI Bengaluru</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/admin/dashboard" className="btn-secondary text-sm px-4 py-2">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <Link href="/admin/dashboard" className="btn-secondary text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap">
               Dashboard
             </Link>
-            <Link href="/admin/shop" className="text-sm px-4 py-2 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-all">
+            <Link href="/admin/shop" className="text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-all whitespace-nowrap">
               Add Shop
             </Link>
-            <Link href="/admin" className="btn-primary text-sm px-4 py-2">
+            <Link href="/admin" className="btn-primary text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap">
               Add Clinic
             </Link>
           </div>
@@ -89,7 +89,7 @@ export default function LandingPage() {
           </h1>
           <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto mb-10">
             Patients scan your QR code, answer 3 quick questions, and our AI generates
-            authentic personalised reviews — ready to post in under 60 seconds.
+            authentic personalised reviews, ready to post in under 60 seconds.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/admin" className="btn-primary bg-white text-blue-700 hover:bg-blue-50 text-lg px-8 py-4">
@@ -141,7 +141,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-16 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-3">Works for Every Business in Bengaluru</h2>
           <p className="text-gray-500 mb-8">
-            Category-specific AI review templates — language tuned for your customers and your business.
+            Category-specific AI review templates, language tuned for your customers and your business.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
             {categories.map((cat) => (
@@ -173,18 +173,18 @@ export default function LandingPage() {
               label: 'Medium (80 words)',
               color: 'bg-blue-50 border-blue-200',
               badge: 'bg-blue-100 text-blue-700',
-              text: 'I had been struggling with recurring fever for weeks. From the very first visit, Dr. Sharma took time to understand my complete history, asked the right questions, and gave a clear diagnosis. The treatment plan was practical — no unnecessary tests or expensive medicines. I recovered in under a week. The staff is helpful and the clinic is well-maintained. Highly recommend.',
+              text: 'I had been struggling with recurring fever for weeks. From the very first visit, Dr. Sharma took time to understand my complete history, asked the right questions, and gave a clear diagnosis. The treatment plan was practical, no unnecessary tests or expensive medicines. I recovered in under a week. The staff is helpful and the clinic is well-maintained. Highly recommend.',
             },
             {
               label: 'Detailed (130 words)',
               color: 'bg-indigo-50 border-indigo-200',
               badge: 'bg-indigo-100 text-indigo-700',
-              text: 'I\'ve been consulting Dr. Sharma for almost two years now and I can say with confidence that he\'s become our family doctor. What I appreciate the most is that he listens — really listens. He doesn\'t rush through consultations or prescribe tests just to fill a prescription pad. When my mother had a sudden health issue last year, he was available over the phone and guided us calmly until we could come in. His explanations are always in simple language, never condescending. The clinic is clean, waiting times are manageable, and the support staff are polite. If you\'re looking for a doctor you can genuinely trust for long-term care, look no further.',
+              text: 'I\'ve been consulting Dr. Sharma for almost two years now and I can say with confidence that he\'s become our family doctor. What I appreciate the most is that he listens, really listens. He doesn\'t rush through consultations or prescribe tests just to fill a prescription pad. When my mother had a sudden health issue last year, he was available over the phone and guided us calmly until we could come in. His explanations are always in simple language, never condescending. The clinic is clean, waiting times are manageable, and the support staff are polite. If you\'re looking for a doctor you can genuinely trust for long-term care, look no further.',
             },
           ].map((r) => (
             <div key={r.label} className={`card border ${r.color}`}>
               <span className={`badge ${r.badge} mb-4 text-xs`}>{r.label}</span>
-              <p className="text-gray-700 text-sm leading-relaxed italic">"{r.text}"</p>
+              <p className="text-gray-700 text-sm leading-relaxed">{r.text}</p>
               <div className="flex mt-4">
                 {[...Array(5)].map((_, i) => (
                   <span key={i} className="text-yellow-400 text-lg">★</span>
@@ -205,7 +205,7 @@ export default function LandingPage() {
             Register your clinic in 2 minutes. Get a QR code. Start collecting reviews today.
           </p>
           <Link href="/admin" className="btn-primary bg-white text-blue-700 hover:bg-blue-50 text-lg px-10 py-4">
-            Register Your Clinic — It's Free →
+            Register Your Clinic, It's Free →
           </Link>
         </div>
       </section>

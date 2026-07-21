@@ -62,7 +62,7 @@ function buildAspectSentence(liked) {
   return `${s}${phrases.slice(0, -1).join(', ')}, and ${phrases[phrases.length - 1]}. `;
 }
 
-// ── Manual review polisher — wraps the patient's own words with a proper
+// ── Manual review polisher, wraps the patient's own words with a proper
 //    intro, the selected highlights, and a closing, instead of just fixing typos.
 //    Always uses the clinic's actual sub-type (Dental Clinic, Skin Clinic, etc.)
 //    rather than ever hardcoding a generic label. ──
@@ -107,7 +107,7 @@ function polishManualClinicReview(rawText, liked, shopName, subType, location) {
   const closings = [
     `I would highly recommend ${name} to anyone in ${loc} looking for a trusted ${kind.toLowerCase()}.`,
     `If you're looking for a reliable clinic in ${loc}, ${name} is a great choice.`,
-    `${name} is genuinely one of the better clinics I've visited — highly recommend.`,
+    `${name} is genuinely one of the better clinics I've visited, highly recommend.`,
   ];
 
   return `${pickRandom(intros)} ${text} ${asp}${pickRandom(closings)}`;
@@ -315,7 +315,7 @@ export default function ClinicReviewPage({ params }) {
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>💙</div>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>What did you like?</h2>
-              <p style={{ color: '#64748b', fontSize: 13, marginTop: 6 }}>Select all that apply — makes your review more helpful.</p>
+              <p style={{ color: '#64748b', fontSize: 13, marginTop: 6 }}>Select all that apply, makes your review more helpful.</p>
             </div>
             <div className="liked-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
               {LIKED_OPTIONS.map((opt) => {
@@ -361,7 +361,7 @@ export default function ClinicReviewPage({ params }) {
                     style={{ padding: '20px 22px', borderRadius: 18, border: '2px solid #ccfbf1', background: '#fafafa', cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}>
                     <div style={{ fontSize: 24, marginBottom: 6 }}>✏️</div>
                     <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Write My Own</div>
-                    <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words — we'll fix the grammar and turn it into a full, well-formed review.</div>
+                    <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Type your experience in your own words, we'll fix the grammar and turn it into a full, well-formed review.</div>
                   </button>
                 </div>
               </>
@@ -425,7 +425,7 @@ export default function ClinicReviewPage({ params }) {
                 </div>
 
                 <div style={{ background: '#f8fafc', borderRadius: 16, padding: 16, marginBottom: 14, border: '1px solid #e2e8f0' }}>
-                  <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 600 }}>💡 TIP — Just write naturally, even if grammar isn't perfect.</p>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px', fontWeight: 600 }}>💡 TIP, Just write naturally, even if grammar isn't perfect.</p>
                   <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>e.g. "dr is good very caring" → we'll turn it into a full review using what you liked in step 2.</p>
                 </div>
 
