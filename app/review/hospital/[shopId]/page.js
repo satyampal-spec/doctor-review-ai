@@ -479,8 +479,9 @@ export default function HospitalReviewPage({ params }) {
             </div>
           )}
           <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 800, margin: '0 0 6px', lineHeight: 1.2 }}>{hospital.shop_name}</h1>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.18)', borderRadius: 100, padding: '5px 14px', fontSize: 12, color: 'rgba(255,255,255,0.92)', fontWeight: 600 }}>
-            <span style={{ color: '#4ade80' }}>●</span> Verified Hospital · {hospital.location}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.18)', borderRadius: 100, padding: '5px 14px', fontSize: 12, color: 'rgba(255,255,255,0.92)', fontWeight: 600, maxWidth: '100%' }}>
+            <span style={{ color: '#4ade80', flexShrink: 0 }}>●</span>
+            <span style={{ minWidth: 0, overflowWrap: 'break-word' }}>Verified Hospital · {hospital.location}</span>
           </div>
         </div>
       </div>
@@ -532,8 +533,8 @@ export default function HospitalReviewPage({ params }) {
                   <button key={opt.key} onClick={() => toggleLiked(opt.key)}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 14, border: `2px solid ${sel ? THEME.primary : '#e2e8f0'}`, background: sel ? THEME.light : '#fafafa', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', fontSize: 13, fontWeight: sel ? 700 : 500, color: sel ? THEME.dark : '#374151' }}>
                     <span style={{ fontSize: 18, flexShrink: 0 }}>{opt.emoji}</span>
-                    {opt.label}
-                    {sel && <span style={{ marginLeft: 'auto', color: THEME.primary, fontSize: 14 }}>✓</span>}
+                    <span style={{ minWidth: 0, flex: 1, overflowWrap: 'break-word' }}>{opt.label}</span>
+                    {sel && <span style={{ flexShrink: 0, color: THEME.primary, fontSize: 14 }}>✓</span>}
                   </button>
                 );
               })}

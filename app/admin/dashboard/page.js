@@ -34,7 +34,14 @@ function MiniBar({ value, max }) {
   );
 }
 
+// Bug fix: this map used to be missing 'hospital', 'spices' and 'clinic' —
+// any business in those categories fell back to a hardcoded '🏥 Hospital'
+// label further down, which was wrong for spices/clinic. Now every category
+// in CATEGORY_CONFIG has an explicit label here, and the fallback below reads
+// straight from CATEGORY_CONFIG for anything added in the future.
 const CATEGORY_LABELS = {
+  hospital: '🏥 Hospital',
+  clinic: '🩺 Clinic',
   clothes: '👗 Clothes',
   pharmacy: '💊 Pharmacy',
   jewellery: '💍 Jewellery',
@@ -42,9 +49,12 @@ const CATEGORY_LABELS = {
   'car-service': '🚗 Car Service',
   barber: '💈 Barber',
   restaurant: '🍽️ Restaurant',
+  spices: '🌶️ Spices',
 };
 
 const SHOP_COLORS = {
+  hospital: '#0ea5e9',
+  clinic: '#0d9488',
   clothes: '#db2777',
   pharmacy: '#16a34a',
   jewellery: '#ca8a04',
@@ -52,6 +62,7 @@ const SHOP_COLORS = {
   'car-service': '#2563eb',
   barber: '#9333ea',
   restaurant: '#dc2626',
+  spices: '#c0392b',
 };
 
 export default function Dashboard() {
@@ -105,7 +116,10 @@ export default function Dashboard() {
 
   const reviewUrl = (biz) => {
     if (!biz) return '';
-    const path = biz.businessType === 'hospital' ? 'hospital' : 'shop';
+    // Bug fix: this used to hardcode 'hospital' vs 'shop', so 'spices' (and now
+    // 'clinic') businesses generated a broken /review/shop/[id] link even though
+    // they have their own dedicated review pages. Read the path from CATEGORY_CONFIG.
+    const path = CATEGORY_CONFIG[biz.businessType]?.reviewPath || 'shop';
     return `${window.location.origin}/review/${path}/${biz.id}`;
   };
 
@@ -122,22 +136,22 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link href="/" className="flex items-center gap-2 shrink-0">
               <span className="text-xl">🏥</span>
               <span className="font-bold text-blue-700">ReviewAI</span>
             </Link>
-            <span className="text-gray-300">/</span>
-            <span className="text-gray-600 font-medium">Dashboard</span>
+            <span className="text-gray-300 shrink-0">/</span>
+            <span className="text-gray-600 font-medium truncate">Dashboard</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={load} disabled={loading} className="btn-secondary text-sm px-3 py-2 flex items-center gap-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={load} disabled={loading} className="btn-secondary text-xs sm:text-sm px-2.5 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1.5 whitespace-nowrap">
               <span className={loading ? 'animate-spin' : ''}>↻</span>
               {loading ? 'Refreshing...' : 'Refresh'}
             </button>
-            <Link href="/admin" className="btn-primary text-sm px-4 py-2">+ Clinic</Link>
-            <Link href="/admin/shop" className="text-sm px-4 py-2 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-all">+ Shop</Link>
+            <Link href="/admin" className="btn-primary text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap">+ Clinic</Link>
+            <Link href="/admin/shop" className="text-xs sm:text-sm px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 transition-all whitespace-nowrap">+ Shop</Link>
           </div>
         </div>
       </div>
@@ -407,7 +421,7 @@ export default function Dashboard() {
                                 <button onClick={() => copyLink(biz.id, 'shop', biz)} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">
                                   {copied === biz.id ? '✓' : '🔗'}
                                 </button>
-                                <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType] || '🏥 Hospital'} · ${biz.location}`, url: reviewUrl(biz), color: SHOP_COLORS[biz.businessType] || '#0ea5e9', downloadName: `qr-${biz.id}` })} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">📱</button>
+                                <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType] || CATEGORY_CONFIG[biz.businessType]?.label || biz.businessType} · ${biz.location}`, url: reviewUrl(biz), color: SHOP_COLORS[biz.businessType] || '#0ea5e9', downloadName: `qr-${biz.id}` })} className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">📱</button>
                                 <a href={reviewUrl(biz)} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50">👁</a>
                                 <a href={`/admin/edit/${biz.id}`} className="text-xs px-2 py-1 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50">✏️</a>
                                 <a href={`/admin/website/${biz.id}`} className="text-xs px-3 py-1 rounded-lg font-bold text-white hover:opacity-90 transition-all" style={{ background: 'linear-gradient(135deg,#10b981,#047857)' }}>🌐</a>
@@ -459,7 +473,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex gap-2 flex-wrap">
                           <button onClick={() => copyLink(biz.id, 'shop', biz)} className="btn-secondary text-xs px-3 py-1.5 flex-1">{copied === biz.id ? '✓ Copied' : '🔗 Link'}</button>
-                          <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType] || '🏥 Hospital'} · ${biz.location}`, url: reviewUrl(biz), color: SHOP_COLORS[biz.businessType] || '#0ea5e9', downloadName: `qr-${biz.id}` })} className="btn-secondary text-xs px-3 py-1.5 flex-1">📱 QR</button>
+                          <button onClick={() => setSelectedQR({ name: biz.shopName, subtitle: `${CATEGORY_LABELS[biz.businessType] || CATEGORY_CONFIG[biz.businessType]?.label || biz.businessType} · ${biz.location}`, url: reviewUrl(biz), color: SHOP_COLORS[biz.businessType] || '#0ea5e9', downloadName: `qr-${biz.id}` })} className="btn-secondary text-xs px-3 py-1.5 flex-1">📱 QR</button>
                           <a href={reviewUrl(biz)} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs px-3 py-1.5 flex-1 text-center">👁 View</a>
                           <a href={`/admin/edit/${biz.id}`} className="btn-secondary text-xs px-3 py-1.5 flex-1 text-center text-blue-600">✏️ Edit</a>
                           <a href={`/admin/website/${biz.id}`} className="text-xs px-3 py-1.5 flex-1 text-center rounded-xl font-bold text-white transition-all" style={{ background: 'linear-gradient(135deg,#10b981,#047857)' }}>🌐 Site</a>
