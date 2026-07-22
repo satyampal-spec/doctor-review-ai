@@ -267,8 +267,12 @@ export default function ReviewPage({ params }) {
     setCopied(type);
     setTimeout(() => setCopied(''), 3000);
 
-    // Track submission
-    supabase.from('clinics').update({ reviews_submitted: (clinic?.stats?.reviewsSubmitted || 0) + 1 }).eq('id', clinicId);
+    // Track submission. Bug fix: this used to read clinic?.stats?.reviewsSubmitted,
+    // the value captured once at page load, so every copy click in a session (and
+    // every overlapping visitor) wrote the same stale count + 1, losing most of them.
+    // Fetch the current count fresh right before writing.
+    supabase.from('clinics').select('reviews_submitted').eq('id', clinicId).single()
+      .then(({ data: fresh }) => supabase.from('clinics').update({ reviews_submitted: (fresh?.reviews_submitted || 0) + 1 }).eq('id', clinicId));
 
     // Auto-open Google Business page
     const googleUrl = clinic?.googleProfileUrl || `https://www.google.com/search?q=${encodeURIComponent((clinic?.doctorName || '') + ' ' + (clinic?.clinicName || '') + ' ' + (clinic?.location || ''))}`;

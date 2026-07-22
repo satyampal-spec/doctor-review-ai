@@ -253,6 +253,11 @@ export default function ZoffReviewPage() {
     const win = window.open(googleUrl, '_blank', 'noopener,noreferrer');
     if (!win) window.location.href = googleUrl; // popup blocked, fall back to same-tab nav
     setTimeout(() => setCopied(''), 2500);
+    // Track that someone copied + opened Google, fire-and-forget so it never
+    // delays the window.open above (we can't know if they actually hit Post on
+    // Google's side, but this page previously didn't track even this much).
+    supabase.from('businesses').select('reviews_submitted').eq('id', ZOFF_ID).single()
+      .then(({ data: fresh }) => supabase.from('businesses').update({ reviews_submitted: (fresh?.reviews_submitted || 0) + 1 }).eq('id', ZOFF_ID));
   };
 
   const regenerate = () => {

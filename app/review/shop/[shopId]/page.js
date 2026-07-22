@@ -176,10 +176,12 @@ export default function ShopReviewPage({ params }) {
     navigator.clipboard.writeText(text);
     setCopied(type);
     setTimeout(() => setCopied(''), 3000);
-    supabase
-      .from('businesses')
-      .update({ reviews_submitted: (shop.stats.reviewsSubmitted || 0) + 1 })
-      .eq('id', shopId);
+    // Bug fix: this used to read shop.stats.reviewsSubmitted, the value captured
+    // once at page load, so every copy click in a session (and every overlapping
+    // visitor) wrote the same stale count + 1, losing most of them. Fetch the
+    // current count fresh right before writing.
+    supabase.from('businesses').select('reviews_submitted').eq('id', shopId).single()
+      .then(({ data: fresh }) => supabase.from('businesses').update({ reviews_submitted: (fresh?.reviews_submitted || 0) + 1 }).eq('id', shopId));
     const googleUrl =
       shop.googleProfileUrl ||
       `https://www.google.com/search?q=${encodeURIComponent((shop.shopName || '') + ' ' + (shop.location || '') + ' review')}`;

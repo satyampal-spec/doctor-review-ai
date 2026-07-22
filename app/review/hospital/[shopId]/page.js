@@ -359,7 +359,12 @@ export default function HospitalReviewPage({ params }) {
 
   const [copied, setCopied] = useState('');
 
-  const GOOGLE_REVIEW_URL = 'https://share.google/iBPK7TfzoXQ9Hi94J';
+  // Bug fix: this used to be hardcoded to Even Hospitals' own review link for
+  // every hospital using this page. Any other hospital client would send their
+  // patients to Even Hospitals' Google review box instead of their own. Now it
+  // reads each business's own link (set in the admin "Google Business Profile
+  // URL" field), falling back to Even Hospitals' link only if that's empty.
+  const GOOGLE_REVIEW_URL = hospital?.google_profile_url || 'https://share.google/iBPK7TfzoXQ9Hi94J';
 
   useEffect(() => {
     (async () => {
@@ -387,8 +392,14 @@ export default function HospitalReviewPage({ params }) {
     setVariant(v => v + 1);
     setLoading(false);
     setStep(4);
+    // Bug fix: this used to read hospital?.reviews_generated, which is the value
+    // captured once when the page first loaded and never updates after. Every
+    // click in a session (and every overlapping visitor) wrote the same stale
+    // count + 1, silently losing most increments. Fetch the current count fresh
+    // right before writing, same pattern already used on the other review pages.
+    const { data: fresh } = await supabase.from('businesses').select('reviews_generated').eq('id', shopId).single();
     await supabase.from('businesses')
-      .update({ reviews_generated: (hospital?.reviews_generated || 0) + 1 })
+      .update({ reviews_generated: (fresh?.reviews_generated || 0) + 1 })
       .eq('id', shopId);
   };
 
@@ -405,8 +416,9 @@ export default function HospitalReviewPage({ params }) {
     setPolishedReview(polished);
     setPolishing(false);
     setStep(4);
+    const { data: fresh } = await supabase.from('businesses').select('reviews_generated').eq('id', shopId).single();
     await supabase.from('businesses')
-      .update({ reviews_generated: (hospital?.reviews_generated || 0) + 1 })
+      .update({ reviews_generated: (fresh?.reviews_generated || 0) + 1 })
       .eq('id', shopId);
   };
 
@@ -415,6 +427,12 @@ export default function HospitalReviewPage({ params }) {
   const copyAndOpen = async () => {
     await navigator.clipboard.writeText(activeReview);
     setCopied('copied');
+    // Bug fix: this page never tracked "Submitted" at all, so the dashboard
+    // always showed 0 regardless of how many people copied and opened Google,
+    // even though we obviously can't know if they actually hit Post on Google's
+    // side once they leave this page.
+    const { data: fresh } = await supabase.from('businesses').select('reviews_submitted').eq('id', shopId).single();
+    await supabase.from('businesses').update({ reviews_submitted: (fresh?.reviews_submitted || 0) + 1 }).eq('id', shopId);
     setTimeout(() => {
       window.open(GOOGLE_REVIEW_URL, '_blank');
       setCopied('');

@@ -212,6 +212,10 @@ export default function SpicesReviewPage({ params }) {
   const copyAndOpen = async () => {
     await navigator.clipboard.writeText(activeReview);
     setCopied('copied');
+    // Track that someone copied + opened Google (we can't know if they actually
+    // hit Post on Google's side, but this page previously didn't track even this).
+    const { data: fresh } = await supabase.from('businesses').select('reviews_submitted').eq('id', shopId).single();
+    await supabase.from('businesses').update({ reviews_submitted: (fresh?.reviews_submitted || 0) + 1 }).eq('id', shopId);
     setTimeout(() => { window.open(googleUrl, '_blank'); setCopied(''); }, 600);
   };
 
