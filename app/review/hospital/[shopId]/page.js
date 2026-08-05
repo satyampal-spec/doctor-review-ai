@@ -43,24 +43,26 @@ const LIKED_OPTIONS = [
   { key: 'safe_delivery',       label: 'Safe delivery & maternity care', emoji: '👶' },
   { key: 'laparoscopic_skill',  label: 'Skilled laparoscopic surgeons', emoji: '🩹' },
   { key: 'smooth_insurance',    label: 'Hassle-free insurance & discharge', emoji: '📄' },
+  { key: 'trusted_doctor',      label: 'A doctor I can fully trust',    emoji: '🤝' },
 ];
 
 const LIKED_PHRASES = {
   experienced_doctors: 'the experienced and highly qualified doctors',
   quick_diagnosis:     'the quick and accurate diagnosis',
   clean_hygienic:      'how clean and hygienic the facility was',
-  short_wait:          'the minimal waiting time',
+  short_wait:          'how quickly registration and consultation moved, barely any waiting around',
   caring_staff:        'the compassionate and caring nursing staff',
   advanced_equipment:  'the state-of-the-art medical equipment',
-  affordable:          'the affordable and transparent treatment cost',
-  clear_communication: 'how clearly the doctors explained everything',
-  good_followup:       'the thorough follow-up care',
+  affordable:          'how economical and reasonable the treatment cost was',
+  clear_communication: 'how the doctor took the time to explain everything and patiently answered every question I had',
+  good_followup:       'how the doctor followed up afterward and was always available for my questions',
   emergency_care:      'the prompt and efficient emergency care',
-  comfortable:         'the clean and comfortable hospital environment',
+  comfortable:         'the clean, homely, and comfortable hospital environment',
   easy_appointment:    'how easy and smooth the appointment process was',
   safe_delivery:       'how safe and well cared for I felt through the entire delivery',
   laparoscopic_skill:  'the skill of the laparoscopic surgical team',
   smooth_insurance:    'how smooth the insurance approval and discharge process was',
+  trusted_doctor:      "how much I trust the doctor, it genuinely feels like having a doctor in the family",
 };
 
 const RATING_OPTIONS = [
