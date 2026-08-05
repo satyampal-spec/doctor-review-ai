@@ -383,59 +383,25 @@ function cleanTypedText(rawText) {
   return text;
 }
 
-// Wraps the patient's own (cleaned) text with an intro/closing, seeded by
-// `variant` so repeated calls with different variants give reproducible,
-// distinct output — same seeding pattern as generateHospitalReview().
-function polishManualReview(rawText, liked, hospitalName, location, specialization, visitType, variant) {
+// Polishes the patient's own written text: grammar/flow cleanup only, plus
+// (if they didn't already name the hospital) one short closing line for
+// local SEO. Deliberately does NOT touch the liked-options/specialization
+// phrase banks used by generateHospitalReview() — this path stays the
+// patient's own words, not our templates. `variant` just varies which of a
+// few neutral closings gets picked, for the regenerate button.
+function polishWrittenReview(rawText, hospitalName, location, variant) {
   const text = cleanTypedText(rawText);
   if (!text) return '';
-
+  const name = hospitalName || 'this hospital';
   const r = seeded(variant ?? 0);
-  const asp = buildAspectSentence(liked, r);
-  const loc = location || 'Bengaluru';
-  const spec = SPECIALIZATIONS.find(s => s.key === specialization);
-  const specClause = spec ? (visitType === 'ip' ? ` I was admitted here for ${spec.phrase}.` : ` I came in for ${spec.phrase}.`) : '';
-
-  const intros = [
-    `I recently visited ${hospitalName} in ${loc} and I'm glad to share my experience.`,
-    `Had a positive experience at ${hospitalName} in ${loc} and want to share it.`,
-    `I visited ${hospitalName} recently and it was a genuinely good experience.`,
-    `Sharing my recent experience at ${hospitalName} in ${loc}.`,
-    `I want to write about my visit to ${hospitalName} in ${loc}.`,
-    `Just came back from ${hospitalName} in ${loc} and wanted to share how it went.`,
-  ];
-  const intro = pick(intros, r) + specClause;
-
-  // Closing with SEO — mixes generic trust language with keyword-rich
-  // (hospital name + category + location) phrasing that helps local search.
+  const loc = displayLoc(location || 'Bengaluru', r); // never the raw full address
   const closings = [
-    `I would highly recommend ${hospitalName} to anyone seeking quality and trusted healthcare in ${loc}.`,
-    `If you're looking for reliable and affordable healthcare in ${loc}, ${hospitalName} is a great choice.`,
-    `${hospitalName} is genuinely one of the best hospitals in ${loc}, highly recommend.`,
-    `One of the best multi-speciality hospitals in ${loc}, I'd recommend it without hesitation.`,
-    `For anyone searching for a trusted hospital in ${loc}, ${hospitalName} is the right choice.`,
-    `Overall a great experience, would recommend ${hospitalName} to anyone in ${loc}.`,
-    `${hospitalName} has earned my trust, and I'd point anyone in ${loc} their way.`,
+    `Would recommend ${name} to anyone in ${loc}.`,
+    `Overall, a great experience at ${name} in ${loc}.`,
+    `Glad I chose ${name}, would recommend it to anyone in ${loc}.`,
   ];
-  const closing = pick(closings, r);
-
-  return `${intro} ${text} ${asp}${closing}`;
-}
-
-// Generates `count` distinct polished variants of the same typed text,
-// retrying with new seeds until enough unique outputs are collected (capped
-// so a pathological case can't loop forever).
-function generatePolishedVariants(rawText, liked, hospitalName, location, specialization, visitType, startVariant, count) {
-  const texts = [];
-  const seen = new Set();
-  let v = startVariant;
-  let attempts = 0;
-  while (texts.length < count && attempts < count * 8) {
-    const text = polishManualReview(rawText, liked, hospitalName, location, specialization, visitType, v);
-    if (text && !seen.has(text)) { seen.add(text); texts.push(text); }
-    v++; attempts++;
-  }
-  return { texts, nextVariant: v };
+  const mentionsName = hospitalName && text.toLowerCase().includes(hospitalName.toLowerCase().split(' ')[0].toLowerCase());
+  return mentionsName ? text : `${text} ${pick(closings, r)}`;
 }
 
 // ── Helper components ──────────────────────────────────────────
@@ -472,16 +438,17 @@ export default function HospitalReviewPage({ params }) {
   const [liked, setLiked]     = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Content step: the patient always types their own experience, then
-  // either keeps it as-is or has it polished into several distinct
-  // options. No more "auto-generate from nothing" mode.
-  const [manualText, setManualText]   = useState('');
-  const [polishing, setPolishing]     = useState(false);
-  const [resultType, setResultType]   = useState(null); // 'raw' | 'polished'
-  const [rawReview, setRawReview]     = useState('');
-  const [polishedReviews, setPolishedReviews] = useState(null); // [{key,label,text}]
+  // Content step: 3 single-result paths.
+  //  'raw'     — exactly what they typed, grammar-cleaned only
+  //  'polished'— their typed text, grammar/flow-polished, no template phrases
+  //  'auto'    — fully generated from their rating/liked/specialization
+  //              selections; whatever they typed is ignored
+  const [manualText, setManualText] = useState('');
+  const [keeping, setKeeping]       = useState(false); // 'Keep As Written' in flight
+  const [polishing, setPolishing]   = useState(false); // 'Polish' in flight
+  const [resultType, setResultType] = useState(null); // 'raw' | 'polished' | 'auto'
+  const [resultText, setResultText] = useState('');
   const [variant, setVariant] = useState(0);
-  const POLISH_COUNT = 4;
 
   const [copied, setCopied] = useState('');
 
@@ -522,38 +489,47 @@ export default function HospitalReviewPage({ params }) {
 
   const handleKeepRaw = async () => {
     if (!manualText.trim()) return;
-    setPolishing(true);
+    setKeeping(true);
     await new Promise(r => setTimeout(r, 500));
-    setRawReview(cleanTypedText(manualText));
+    setResultText(cleanTypedText(manualText));
     setResultType('raw');
-    setPolishing(false);
+    setKeeping(false);
     setStep(5);
     await bumpReviewsGenerated();
   };
 
-  const handlePolishMulti = async () => {
+  const handlePolish = async () => {
     if (!manualText.trim()) return;
     setPolishing(true);
-    await new Promise(r => setTimeout(r, 900));
+    await new Promise(r => setTimeout(r, 700));
     const name = hospital?.shop_name || 'Even Hospital';
     const loc  = hospital?.location || 'Bengaluru';
-    const { texts, nextVariant } = generatePolishedVariants(
-      manualText, liked, name, loc, specialization, visitType, variant, POLISH_COUNT
-    );
-    setPolishedReviews(texts.map((text, i) => ({ key: `option${i + 1}`, label: `Option ${i + 1}`, text })));
-    setVariant(nextVariant);
+    setResultText(polishWrittenReview(manualText, name, loc, variant));
+    setVariant(v => v + 1);
     setResultType('polished');
     setPolishing(false);
     setStep(5);
     await bumpReviewsGenerated();
   };
 
-  // id identifies which card was just copied ('manual', or a review-type
-  // key like 'short'/'medium'/'detailed') so only that card's button flips
-  // to the "Copied!" state, not all of them at once.
-  const copyAndOpen = async (text, id) => {
-    await navigator.clipboard.writeText(text);
-    setCopied(id);
+  // Fully generated from the rating/liked/specialization selections made
+  // earlier in the flow — whatever's in the textarea is ignored here.
+  const handleAutoGenerate = async () => {
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 900));
+    const name = hospital?.shop_name || 'Even Hospital';
+    const loc  = hospital?.location || 'Bengaluru';
+    setResultText(generateHospitalReview(name, loc, rating, liked, 'medium', variant, 'english', specialization, visitType));
+    setVariant(v => v + 1);
+    setResultType('auto');
+    setLoading(false);
+    setStep(5);
+    await bumpReviewsGenerated();
+  };
+
+  const copyAndOpen = async () => {
+    await navigator.clipboard.writeText(resultText);
+    setCopied('copied');
     // Bug fix: this page never tracked "Submitted" at all, so the dashboard
     // always showed 0 regardless of how many people copied and opened Google,
     // even though we obviously can't know if they actually hit Post on Google's
@@ -566,16 +542,19 @@ export default function HospitalReviewPage({ params }) {
     }, 600);
   };
 
-  // Only meaningful for the polished path — the raw path is a deterministic
-  // cleanup of exactly what the patient typed, so there's nothing to reroll.
-  const regeneratePolished = () => {
+  // Only meaningful for 'polished' (cycles the closing line) and 'auto'
+  // (new templated variant) — 'raw' is a deterministic cleanup of exactly
+  // what the patient typed, so there's nothing to reroll.
+  const regenerate = () => {
     const name = hospital?.shop_name;
     const loc  = hospital?.location;
-    const { texts, nextVariant } = generatePolishedVariants(
-      manualText, liked, name, loc, specialization, visitType, variant, POLISH_COUNT
-    );
-    setPolishedReviews(texts.map((text, i) => ({ key: `option${i + 1}`, label: `Option ${i + 1}`, text })));
-    setVariant(nextVariant);
+    if (resultType === 'polished') {
+      setResultText(polishWrittenReview(manualText, name, loc, variant));
+      setVariant(v => v + 1);
+    } else if (resultType === 'auto') {
+      setResultText(generateHospitalReview(name, loc, rating, liked, 'medium', variant, 'english', specialization, visitType));
+      setVariant(v => v + 1);
+    }
   };
 
   if (notFound) return (
@@ -744,77 +723,67 @@ export default function HospitalReviewPage({ params }) {
             />
             <p style={{ fontSize: 12, color: '#94a3b8', margin: '6px 0 20px', textAlign: 'right' }}>{manualText.length} characters</p>
 
-            <button onClick={handlePolishMulti} disabled={!manualText.trim() || polishing}
+            <button onClick={handleKeepRaw} disabled={!manualText.trim() || keeping || polishing}
               style={{ width: '100%', padding: '16px', borderRadius: 14, background: manualText.trim() ? theme.gradient : '#e2e8f0', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: manualText.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
-              {polishing ? (
-                <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Polishing...</>
-              ) : `✨ Polish Into ${POLISH_COUNT} Options`}
+              {keeping ? (
+                <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Preparing...</>
+              ) : 'Keep It As I Wrote It'}
             </button>
 
-            <button onClick={handleKeepRaw} disabled={!manualText.trim() || polishing}
-              style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'transparent', color: manualText.trim() ? theme.dark : '#94a3b8', border: `2px solid ${manualText.trim() ? theme.primary : '#e2e8f0'}`, fontWeight: 700, fontSize: 14, cursor: manualText.trim() ? 'pointer' : 'not-allowed' }}>
-              Keep It As I Wrote It
+            <button onClick={handlePolish} disabled={!manualText.trim() || keeping || polishing}
+              style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'transparent', color: manualText.trim() ? theme.dark : '#94a3b8', border: `2px solid ${manualText.trim() ? theme.primary : '#e2e8f0'}`, fontWeight: 700, fontSize: 14, cursor: manualText.trim() ? 'pointer' : 'not-allowed', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              {polishing ? (
+                <><div style={{ width: 18, height: 18, border: `3px solid ${theme.ring}`, borderTopColor: theme.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Polishing...</>
+              ) : '✨ Polish My Review'}
             </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 16px' }}>
+              <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+              <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>OR</span>
+              <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+            </div>
+
+            <button onClick={handleAutoGenerate} disabled={loading || keeping || polishing}
+              style={{ width: '100%', padding: '14px', borderRadius: 14, background: '#fafafa', color: '#374151', border: '2px solid #e2e8f0', fontWeight: 700, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              {loading ? (
+                <><div style={{ width: 18, height: 18, border: '3px solid rgba(0,0,0,0.1)', borderTopColor: theme.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Generating...</>
+              ) : '🎯 Auto-Generate Review (Based on My Selections)'}
+            </button>
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0', textAlign: 'center' }}>Writes a review from what you picked earlier — no need to type anything above.</p>
           </div>
         )}
 
         {/* ══ STEP 5: Result ══ */}
-        {step === 5 && (resultType === 'raw' ? rawReview : polishedReviews) && (
+        {step === 5 && resultText && (
           <div className="anim-up">
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <span className="anim-cel" style={{ display: 'inline-block', fontSize: 52 }}>🎉</span>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: '10px 0 4px' }}>
-                {resultType === 'raw' ? 'Your Review is Ready!' : 'Your Reviews Are Ready!'}
-              </h2>
-              <p style={{ color: '#64748b', fontSize: 14 }}>
-                {resultType === 'raw' ? 'Exactly as you wrote it, cleaned up and ready to post.' : 'Pick whichever version fits best, then copy and paste on Google.'}
-              </p>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: '10px 0 4px' }}>Your Review is Ready!</h2>
+              <p style={{ color: '#64748b', fontSize: 14 }}>Copy it and paste on Google.</p>
             </div>
 
-            {resultType === 'raw' ? (
-              <div className="review-card" style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: '0 8px 40px rgba(14,165,233,0.12)', border: '1px solid #e0f2fe', marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: theme.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 16 }}>
-                    {(hospital.shop_name || 'H')[0]}
-                  </div>
-                  <div>
-                    <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', margin: 0 }}>Your Review</p>
-                    <Stars count={ratingObj?.stars || 5} />
-                  </div>
+            <div className="review-card" style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: '0 8px 40px rgba(14,165,233,0.12)', border: '1px solid #e0f2fe', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: theme.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 16 }}>
+                  {(hospital.shop_name || 'H')[0]}
                 </div>
-                <p style={{ color: '#374151', lineHeight: 1.75, fontSize: 15, margin: '0 0 20px' }}>{rawReview}</p>
-                <button onClick={() => copyAndOpen(rawReview, 'raw')}
-                  style={{ width: '100%', padding: '16px', borderRadius: 14, background: '#16a34a', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'opacity 0.2s' }}
-                  onMouseOver={e => e.currentTarget.style.opacity = '0.92'} onMouseOut={e => e.currentTarget.style.opacity = '1'}>
-                  {copied === 'raw' ? '✅ Copied! Opening Google...' : '📋 Copy & Open Google Review'}
-                </button>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', margin: 0 }}>Your Review</p>
+                  <Stars count={ratingObj?.stars || 5} />
+                </div>
               </div>
-            ) : (
-              polishedReviews.map(rev => (
-                <div key={rev.key} className="review-card" style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: '0 8px 40px rgba(14,165,233,0.12)', border: '1px solid #e0f2fe', marginBottom: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f1f5f9' }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: theme.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 16 }}>
-                      {(hospital.shop_name || 'H')[0]}
-                    </div>
-                    <div>
-                      <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', margin: 0 }}>{rev.label}</p>
-                      <Stars count={ratingObj?.stars || 5} />
-                    </div>
-                  </div>
-                  <p style={{ color: '#374151', lineHeight: 1.75, fontSize: 15, margin: '0 0 20px' }}>{rev.text}</p>
-                  <button onClick={() => copyAndOpen(rev.text, rev.key)}
-                    style={{ width: '100%', padding: '16px', borderRadius: 14, background: '#16a34a', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'opacity 0.2s' }}
-                    onMouseOver={e => e.currentTarget.style.opacity = '0.92'} onMouseOut={e => e.currentTarget.style.opacity = '1'}>
-                    {copied === rev.key ? '✅ Copied! Opening Google...' : `📋 Copy ${rev.label} & Open Google`}
-                  </button>
-                </div>
-              ))
-            )}
+              <p style={{ color: '#374151', lineHeight: 1.75, fontSize: 15, margin: '0 0 20px' }}>{resultText}</p>
+              <button onClick={copyAndOpen}
+                style={{ width: '100%', padding: '16px', borderRadius: 14, background: '#16a34a', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'opacity 0.2s' }}
+                onMouseOver={e => e.currentTarget.style.opacity = '0.92'} onMouseOut={e => e.currentTarget.style.opacity = '1'}>
+                {copied === 'copied' ? '✅ Copied! Opening Google...' : '📋 Copy & Open Google Review'}
+              </button>
+            </div>
 
-            {resultType === 'polished' && (
-              <button onClick={regeneratePolished}
+            {resultType !== 'raw' && (
+              <button onClick={regenerate}
                 style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'transparent', color: '#64748b', border: '2px solid #e2e8f0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 10 }}>
-                🔄 Generate Different Options
+                🔄 Generate Different Version
               </button>
             )}
 
@@ -827,7 +796,7 @@ export default function HospitalReviewPage({ params }) {
             <div style={{ marginTop: 20, background: '#f8fafc', borderRadius: 16, padding: 18, border: '1px solid #e2e8f0' }}>
               <p style={{ fontWeight: 700, fontSize: 13, color: '#374151', margin: '0 0 10px' }}>📌 How to post on Google:</p>
               <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#64748b', lineHeight: 2 }}>
-                <li>{resultType === 'polished' ? 'Pick a version and click' : 'Click'} <strong>"Copy & Open Google"</strong></li>
+                <li>Click <strong>"Copy & Open Google Review"</strong> above</li>
                 <li>Google review page will open</li>
                 <li>Tap the text box and paste (<strong>Ctrl+V / ⌘V</strong>)</li>
                 <li>Submit your review ⭐</li>
