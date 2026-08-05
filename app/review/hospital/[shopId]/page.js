@@ -143,16 +143,24 @@ function buildAspectSentence(liked, r) {
 // ── Location: full address only 2 in 10 times ─────────────────
 // Derives variants from the business's own `location` field so every hospital
 // on this shared page gets its own area name, not a hardcoded one.
+// Never emits the raw full address (house/building no., street, pincode) —
+// only a clean area name + city, since no real patient writes a full postal
+// address inside a review. Picks the address segment just before the city
+// name (skipping house-number-only segments like "511" or "No. 28").
 function displayLoc(loc, r) {
   const base = (loc || 'Bengaluru').trim();
-  const area = base.split(',')[0].trim();
-  const city = /bengaluru|bangalore/i.test(base) ? '' : ', Bengaluru';
-  if (r() < 0.2) return base;
+  const parts = base.split(',').map(s => s.trim()).filter(Boolean);
+  const isJunk = (s) => /^\d+$/.test(s) || /^(no\.?|#)\s*\d*$/i.test(s);
+  const cityIdx = parts.findIndex(p => /bengaluru|bangalore/i.test(p));
+  let area = null;
+  for (let i = (cityIdx > 0 ? cityIdx : parts.length) - 1; i >= 0; i--) {
+    if (!isJunk(parts[i])) { area = parts[i]; break; }
+  }
+  if (!area) area = 'Bengaluru';
   return pick([
-    base,
-    `${area}${city}`,
+    `${area}, Bengaluru`,
     'Bengaluru',
-    `${area} area${city}`,
+    `${area} area, Bengaluru`,
     'Bengaluru city',
     `${area}, Bangalore`,
   ], r);
@@ -423,8 +431,10 @@ export default function HospitalReviewPage({ params }) {
   const [notFound, setNotFound] = useState(false);
 
   // Flow state
-  const [step, setStep]       = useState(1);
-  const [rating, setRating]   = useState(null);
+  // Skips the star-rating step (kept below, unused) — flow now starts
+  // directly at specialization, defaulting to a 5-star "excellent" rating.
+  const [step, setStep]       = useState(2);
+  const [rating, setRating]   = useState('excellent');
   const [visitType, setVisitType]         = useState(null); // 'opd' | 'ip'
   const [specialization, setSpecialization] = useState(null);
   const [liked, setLiked]     = useState([]);
@@ -595,7 +605,7 @@ export default function HospitalReviewPage({ params }) {
 
       {/* Progress bar */}
       <div style={{ height: 4, background: '#e0f2fe' }}>
-        <div style={{ height: 4, background: theme.gradient, width: `${(step / 5) * 100}%`, transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)' }} />
+        <div style={{ height: 4, background: theme.gradient, width: `${((step - 1) / 4) * 100}%`, transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)' }} />
       </div>
 
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px 0' }}>
@@ -627,7 +637,6 @@ export default function HospitalReviewPage({ params }) {
         {/* ══ STEP 2: What did you come in for? ══ */}
         {step === 2 && (
           <div className="anim-up review-card" style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: '0 8px 40px rgba(14,165,233,0.1)', border: '1px solid #e0f2fe' }}>
-            <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: theme.primary, fontWeight: 600, fontSize: 13, cursor: 'pointer', marginBottom: 16, padding: 0 }}>← Back</button>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>🩺</div>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>What did you visit us for?</h2>
