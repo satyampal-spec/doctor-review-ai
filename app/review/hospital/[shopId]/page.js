@@ -5,13 +5,25 @@ import { supabase } from '@/lib/supabase';
 
 const HOSPITAL_STOCK_PHOTO = 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&q=80';
 
-// ── Theme ──────────────────────────────────────────────────────
-const THEME = {
-  primary: '#0ea5e9',
-  dark:    '#0369a1',
-  gradient:'linear-gradient(135deg,#0ea5e9 0%,#0369a1 100%)',
-  light:   '#f0f9ff',
-  ring:    '#bae6fd',
+// ── Theme (keyed by business sub_type; default preserves the original
+// sky-blue look for Even Hospitals and anything without a sub_type) ────
+const GOOGLE_COLORS = { blue: '#4285F4', red: '#EA4335', yellow: '#FBBC05', green: '#34A853' };
+const THEMES = {
+  default: {
+    primary: '#0ea5e9',
+    dark:    '#0369a1',
+    gradient:'linear-gradient(135deg,#0ea5e9 0%,#0369a1 100%)',
+    light:   '#f0f9ff',
+    ring:    '#bae6fd',
+  },
+  altius: {
+    primary: GOOGLE_COLORS.blue,
+    dark:    '#1a73e8',
+    gradient:`linear-gradient(135deg,${GOOGLE_COLORS.blue} 0%,#1a73e8 100%)`,
+    light:   '#e8f0fe',
+    ring:    '#aecbfa',
+    accents: [GOOGLE_COLORS.blue, GOOGLE_COLORS.red, GOOGLE_COLORS.yellow, GOOGLE_COLORS.green],
+  },
 };
 
 // ── Liked options (hospital-specific) ─────────────────────────
@@ -28,6 +40,9 @@ const LIKED_OPTIONS = [
   { key: 'emergency_care',      label: 'Excellent emergency care',   emoji: '🚑' },
   { key: 'comfortable',         label: 'Comfortable environment',    emoji: '🛋️' },
   { key: 'easy_appointment',    label: 'Easy appointments',          emoji: '📅' },
+  { key: 'safe_delivery',       label: 'Safe delivery & maternity care', emoji: '👶' },
+  { key: 'laparoscopic_skill',  label: 'Skilled laparoscopic surgeons', emoji: '🩹' },
+  { key: 'smooth_insurance',    label: 'Hassle-free insurance & discharge', emoji: '📄' },
 ];
 
 const LIKED_PHRASES = {
@@ -43,6 +58,9 @@ const LIKED_PHRASES = {
   emergency_care:      'the prompt and efficient emergency care',
   comfortable:         'the clean and comfortable hospital environment',
   easy_appointment:    'how easy and smooth the appointment process was',
+  safe_delivery:       'how safe and well cared for I felt through the entire delivery',
+  laparoscopic_skill:  'the skill of the laparoscopic surgical team',
+  smooth_insurance:    'how smooth the insurance approval and discharge process was',
 };
 
 const RATING_OPTIONS = [
@@ -56,6 +74,48 @@ const REVIEW_TYPES = [
   { key: 'medium',   label: 'Medium',   words: '70–100 words',  emoji: '✨' },
   { key: 'detailed', label: 'Detailed', words: '100–150 words', emoji: '📝' },
 ];
+
+// ── Visit type + specialization (which department the patient came for) ──
+// Ordered by real patient volume for Even-EHBR / Altius HBR Layout, per
+// kx_billing_records (Metabase, hospital location='Even-EHBR').
+const VISIT_TYPES = [
+  { key: 'opd', label: 'OPD / Consultation', emoji: '🚶' },
+  { key: 'ip',  label: 'Admitted (IP)',      emoji: '🛏️' },
+];
+
+const SPECIALIZATIONS = [
+  { key: 'obg',               label: 'Gynaecology & Maternity',       emoji: '🤰', phrase: 'gynaecology and maternity care' },
+  { key: 'internal_medicine', label: 'Internal Medicine / GP',        emoji: '🩺', phrase: 'a general medicine consultation' },
+  { key: 'general_surgery',   label: 'General / Laparoscopic Surgery',emoji: '🔪', phrase: 'a surgical procedure' },
+  { key: 'orthopedics',       label: 'Orthopaedics',                  emoji: '🦴', phrase: 'orthopaedic care' },
+  { key: 'cardiology',        label: 'Cardiology',                    emoji: '❤️', phrase: 'cardiac care' },
+  { key: 'pediatrics',        label: 'Paediatrics',                   emoji: '🧒', phrase: "my child's paediatric care" },
+  { key: 'neurology',         label: 'Neurology / Neurosurgery',      emoji: '🧠', phrase: 'neurology care' },
+  { key: 'urology',           label: 'Urology',                       emoji: '🩻', phrase: 'urology care' },
+  { key: 'nephrology',        label: 'Nephrology',                    emoji: '💧', phrase: 'nephrology care' },
+  { key: 'emergency',         label: 'Emergency Care',                emoji: '🚑', phrase: 'emergency care' },
+  { key: 'ent',                label: 'ENT',                          emoji: '👂', phrase: 'an ENT consultation' },
+  { key: 'oncology',          label: 'Oncology',                      emoji: '🎗️', phrase: 'oncology care' },
+  { key: 'other',             label: 'General Checkup',               emoji: '➕', phrase: 'a general health checkup' },
+];
+
+// ── Specialization sentence (woven in right after the opening line) ────
+function buildSpecialtySentence(specKey, visitType, r) {
+  const spec = SPECIALIZATIONS.find(s => s.key === specKey);
+  if (!spec) return '';
+  const phrase = spec.phrase;
+  const IP = [
+    `I was admitted here for ${phrase}. `,
+    `I came in and was admitted for ${phrase}. `,
+    `My admission was for ${phrase}. `,
+  ];
+  const OPD = [
+    `I visited for ${phrase}. `,
+    `I came in as an outpatient for ${phrase}. `,
+    `My consultation here was for ${phrase}. `,
+  ];
+  return pick(visitType === 'ip' ? IP : OPD, r);
+}
 
 // ── Seeded RNG (same variant → same review always) ────────────
 function seeded(seed) {
@@ -79,21 +139,30 @@ function buildAspectSentence(liked, r) {
 }
 
 // ── Location: full address only 2 in 10 times ─────────────────
+// Derives variants from the business's own `location` field so every hospital
+// on this shared page gets its own area name, not a hardcoded one.
 function displayLoc(loc, r) {
-  if (r() < 0.2) return loc;
+  const base = (loc || 'Bengaluru').trim();
+  const area = base.split(',')[0].trim();
+  const city = /bengaluru|bangalore/i.test(base) ? '' : ', Bengaluru';
+  if (r() < 0.2) return base;
   return pick([
-    'Race Course Road, Bengaluru','Madhava Nagar, Bengaluru','central Bengaluru',
-    'Bengaluru','Race Course Road, Bangalore','Madhava Nagar area, Bengaluru',
-    'Bengaluru city','Race Course Road area, Bengaluru',
+    base,
+    `${area}${city}`,
+    'Bengaluru',
+    `${area} area${city}`,
+    'Bengaluru city',
+    `${area}, Bangalore`,
   ], r);
 }
 
 // ── 3000+ unique review generator ─────────────────────────────
-function generateHospitalReview(hospitalName, location, rating, liked, type, variant, lang) {
+function generateHospitalReview(hospitalName, location, rating, liked, type, variant, lang, specialization, visitType) {
   const r   = seeded(variant);
   const n   = hospitalName || 'Even Hospitals';
   const loc = displayLoc(location || 'Bengaluru', r);
   const asp = buildAspectSentence(liked, r);
+  const spec = buildSpecialtySentence(specialization, visitType, r);
 
   // ── KANNADA ─────────────────────────────────────────────────
   if (lang === 'kannada') {
@@ -189,8 +258,11 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
     `Would absolutely come back and recommend to everyone.`,
     `${n} sets the standard for healthcare in Bengaluru.`,
     `If you need great healthcare in Bengaluru, this is the place to go.`,
+    `One of the best multi-speciality hospitals in ${loc}, hands down.`,
+    `Top choice for quality healthcare in ${loc}.`,
+    `If you're in ${loc} and need a hospital you can trust, this is it.`,
   ];
-  if (type==='short') return `${pick(SO,r)} ${pick(SM,r)} ${pick(SC,r)}`;
+  if (type==='short') return `${pick(SO,r)} ${spec}${pick(SM,r)} ${pick(SC,r)}`;
 
   // ── ENGLISH MEDIUM (12×10×8 = 960 unique) ───────────────────
   const MO = [
@@ -228,8 +300,10 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
     `${n} is genuinely one of Bengaluru's finest hospitals. Strongly recommend to everyone.`,
     `I will be returning to ${n} for all future healthcare needs. Highly recommended.`,
     `For anyone seeking a hospital that genuinely cares, ${n} in Bengaluru is the answer.`,
+    `${n} is easily one of the best multi-speciality hospitals in ${loc}, I'd recommend it to anyone nearby.`,
+    `If you're searching for a trusted, well-equipped hospital in ${loc}, ${n} is the one to choose.`,
   ];
-  if (type!=='detailed') return `${pick(MO,r)} ${pick(MM,r)} ${pick(MC,r)}`;
+  if (type!=='detailed') return `${pick(MO,r)} ${spec}${pick(MM,r)} ${pick(MC,r)}`;
 
   // ── ENGLISH DETAILED (8×8×6 = 384 unique) ───────────────────
   const DO = [
@@ -259,12 +333,13 @@ function generateHospitalReview(hospitalName, location, rating, liked, type, var
     `I strongly recommend ${n} to anyone in Bengaluru looking for reliable, compassionate, and expert medical care. It genuinely restores your confidence in healthcare.`,
     `Five stars is not enough for ${n}. The quality of care, the professionalism of the staff, and the affordability of treatment make it genuinely one of the best hospitals in Bengaluru.`,
     `If you are in Bengaluru and need healthcare you can truly trust, ${n} is the answer. The team is exceptional and the care is genuine. Highly recommend without reservation.`,
+    `${n} is genuinely one of the best multi-speciality hospitals in ${loc}. Between the medical expertise and the way the whole team treats you, it's an easy recommendation for anyone in the area.`,
   ];
-  return `${pick(DO,r)} ${pick(DM,r)} ${pick(DC,r)}`;
+  return `${pick(DO,r)} ${spec}${pick(DM,r)} ${pick(DC,r)}`;
 }
 
 // ── Manual review polisher ─────────────────────────────────────
-function polishManualReview(rawText, liked, hospitalName, location) {
+function polishManualReview(rawText, liked, hospitalName, location, specialization, visitType) {
   let text = rawText.trim();
   if (!text) return '';
 
@@ -295,20 +370,26 @@ function polishManualReview(rawText, liked, hospitalName, location) {
 
   // Build aspect sentence from liked options
   const asp = buildAspectSentence(liked);
+  const loc = location || 'Bengaluru';
+  const spec = SPECIALIZATIONS.find(s => s.key === specialization);
+  const specClause = spec ? (visitType === 'ip' ? ` I was admitted here for ${spec.phrase}.` : ` I came in for ${spec.phrase}.`) : '';
 
   // Pick a varied intro
   const intros = [
-    `I recently visited ${hospitalName} in ${location || 'Bengaluru'} and I'm glad to share my experience.`,
-    `Had a positive experience at ${hospitalName} in ${location || 'Bengaluru'} and want to share it.`,
+    `I recently visited ${hospitalName} in ${loc} and I'm glad to share my experience.`,
+    `Had a positive experience at ${hospitalName} in ${loc} and want to share it.`,
     `I visited ${hospitalName} recently and it was a genuinely good experience.`,
   ];
-  const intro = intros[Math.floor(Math.random() * intros.length)];
+  const intro = intros[Math.floor(Math.random() * intros.length)] + specClause;
 
-  // Closing with SEO
+  // Closing with SEO — mixes generic trust language with keyword-rich
+  // (hospital name + category + location) phrasing that helps local search.
   const closings = [
-    `I would highly recommend ${hospitalName} to anyone seeking quality and trusted healthcare in Bengaluru.`,
-    `If you're looking for reliable and affordable healthcare in Bengaluru, ${hospitalName} is a great choice.`,
-    `${hospitalName} is genuinely one of the best hospitals in Bengaluru, highly recommend.`,
+    `I would highly recommend ${hospitalName} to anyone seeking quality and trusted healthcare in ${loc}.`,
+    `If you're looking for reliable and affordable healthcare in ${loc}, ${hospitalName} is a great choice.`,
+    `${hospitalName} is genuinely one of the best hospitals in ${loc}, highly recommend.`,
+    `One of the best multi-speciality hospitals in ${loc}, I'd recommend it without hesitation.`,
+    `For anyone searching for a trusted hospital in ${loc}, ${hospitalName} is the right choice.`,
   ];
   const closing = closings[Math.floor(Math.random() * closings.length)];
 
@@ -342,6 +423,8 @@ export default function HospitalReviewPage({ params }) {
   // Flow state
   const [step, setStep]       = useState(1);
   const [rating, setRating]   = useState(null);
+  const [visitType, setVisitType]         = useState(null); // 'opd' | 'ip'
+  const [specialization, setSpecialization] = useState(null);
   const [liked, setLiked]     = useState([]);
   const [mode, setMode]       = useState(null);       // 'auto' | 'manual'
   const [reviewType, setReviewType] = useState('medium');
@@ -366,6 +449,9 @@ export default function HospitalReviewPage({ params }) {
   // URL" field), falling back to Even Hospitals' link only if that's empty.
   const GOOGLE_REVIEW_URL = hospital?.google_profile_url || 'https://share.google/iBPK7TfzoXQ9Hi94J';
 
+  // Per-business theme, selected via the business's sub_type (e.g. 'altius').
+  const theme = THEMES[hospital?.sub_type] || THEMES.default;
+
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
@@ -386,12 +472,12 @@ export default function HospitalReviewPage({ params }) {
     const rev = generateHospitalReview(
       hospital?.shop_name || 'Even Hospital',
       hospital?.location || 'Bengaluru',
-      rating, liked, reviewType, variant, lang
+      rating, liked, reviewType, variant, lang, specialization, visitType
     );
     setGeneratedReview(rev);
     setVariant(v => v + 1);
     setLoading(false);
-    setStep(4);
+    setStep(5);
     // Bug fix: this used to read hospital?.reviews_generated, which is the value
     // captured once when the page first loaded and never updates after. Every
     // click in a session (and every overlapping visitor) wrote the same stale
@@ -411,11 +497,12 @@ export default function HospitalReviewPage({ params }) {
       manualText,
       liked,
       hospital?.shop_name || 'Even Hospital',
-      hospital?.location || 'Bengaluru'
+      hospital?.location || 'Bengaluru',
+      specialization, visitType
     );
     setPolishedReview(polished);
     setPolishing(false);
-    setStep(4);
+    setStep(5);
     const { data: fresh } = await supabase.from('businesses').select('reviews_generated').eq('id', shopId).single();
     await supabase.from('businesses')
       .update({ reviews_generated: (fresh?.reviews_generated || 0) + 1 })
@@ -447,12 +534,12 @@ export default function HospitalReviewPage({ params }) {
 
   const regenerate = () => {
     if (mode === 'manual') {
-      const polished = polishManualReview(manualText, liked, hospital?.shop_name, hospital?.location);
+      const polished = polishManualReview(manualText, liked, hospital?.shop_name, hospital?.location, specialization, visitType);
       setPolishedReview(polished);
     } else {
       const rev = generateHospitalReview(
         hospital?.shop_name, hospital?.location,
-        rating, liked, reviewType, variant, lang
+        rating, liked, reviewType, variant, lang, specialization, visitType
       );
       setGeneratedReview(rev);
       setVariant(v => v + 1);
@@ -471,7 +558,7 @@ export default function HospitalReviewPage({ params }) {
 
   if (!hospital) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f9ff' }}>
-      <div style={{ width: 40, height: 40, border: '4px solid #bae6fd', borderTopColor: THEME.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ width: 40, height: 40, border: '4px solid #bae6fd', borderTopColor: theme.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -483,7 +570,7 @@ export default function HospitalReviewPage({ params }) {
       <style>{ANIM}</style>
 
       {/* Header */}
-      <div style={{ background: THEME.gradient, padding: '0 20px' }}>
+      <div style={{ background: theme.gradient, padding: '0 20px' }}>
         <div style={{ maxWidth: 560, margin: '0 auto', padding: '28px 0 32px', textAlign: 'center' }}>
           {hospital.photo_url ? (
             <img
@@ -506,7 +593,7 @@ export default function HospitalReviewPage({ params }) {
 
       {/* Progress bar */}
       <div style={{ height: 4, background: '#e0f2fe' }}>
-        <div style={{ height: 4, background: THEME.gradient, width: `${(step / 4) * 100}%`, transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)' }} />
+        <div style={{ height: 4, background: theme.gradient, width: `${(step / 5) * 100}%`, transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)' }} />
       </div>
 
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px 0' }}>
@@ -522,7 +609,7 @@ export default function HospitalReviewPage({ params }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {RATING_OPTIONS.map(r => (
                 <button key={r.key} onClick={() => { setRating(r.key); setStep(2); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 16, border: `2px solid ${rating === r.key ? THEME.primary : '#e2e8f0'}`, background: rating === r.key ? THEME.light : '#fafafa', cursor: 'pointer', transition: 'all 0.18s', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 20px', borderRadius: 16, border: `2px solid ${rating === r.key ? theme.primary : '#e2e8f0'}`, background: rating === r.key ? theme.light : '#fafafa', cursor: 'pointer', transition: 'all 0.18s', textAlign: 'left' }}>
                   <span style={{ fontSize: 30 }}>{r.emoji}</span>
                   <div>
                     <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>{r.label}</div>
@@ -535,10 +622,52 @@ export default function HospitalReviewPage({ params }) {
           </div>
         )}
 
-        {/* ══ STEP 2: What did you like? ══ */}
+        {/* ══ STEP 2: What did you come in for? ══ */}
         {step === 2 && (
           <div className="anim-up review-card" style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: '0 8px 40px rgba(14,165,233,0.1)', border: '1px solid #e0f2fe' }}>
-            <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: THEME.primary, fontWeight: 600, fontSize: 13, cursor: 'pointer', marginBottom: 16, padding: 0 }}>← Back</button>
+            <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: theme.primary, fontWeight: 600, fontSize: 13, cursor: 'pointer', marginBottom: 16, padding: 0 }}>← Back</button>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }}>🩺</div>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>What did you visit us for?</h2>
+              <p style={{ color: '#64748b', fontSize: 13, marginTop: 6 }}>This helps make your review more specific.</p>
+            </div>
+
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Visit type</p>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 22 }}>
+              {VISIT_TYPES.map(v => (
+                <button key={v.key} onClick={() => setVisitType(v.key)}
+                  style={{ flex: 1, padding: '12px 8px', borderRadius: 14, border: `2px solid ${visitType === v.key ? theme.primary : '#e2e8f0'}`, background: visitType === v.key ? theme.light : '#fafafa', cursor: 'pointer', transition: 'all 0.15s', fontWeight: 700, fontSize: 13, color: visitType === v.key ? theme.dark : '#374151' }}>
+                  <span style={{ fontSize: 18, marginRight: 6 }}>{v.emoji}</span>{v.label}
+                </button>
+              ))}
+            </div>
+
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Department / specialization</p>
+            <div className="liked-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
+              {SPECIALIZATIONS.map(opt => {
+                const sel = specialization === opt.key;
+                return (
+                  <button key={opt.key} onClick={() => setSpecialization(opt.key)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 14, border: `2px solid ${sel ? theme.primary : '#e2e8f0'}`, background: sel ? theme.light : '#fafafa', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', fontSize: 13, fontWeight: sel ? 700 : 500, color: sel ? theme.dark : '#374151' }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>{opt.emoji}</span>
+                    <span style={{ minWidth: 0, flex: 1, overflowWrap: 'break-word' }}>{opt.label}</span>
+                    {sel && <span style={{ flexShrink: 0, color: theme.primary, fontSize: 14 }}>✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button onClick={() => setStep(3)} disabled={!visitType || !specialization}
+              style={{ width: '100%', padding: '15px', borderRadius: 14, background: (visitType && specialization) ? theme.gradient : '#e2e8f0', color: '#fff', border: 'none', fontWeight: 700, fontSize: 15, cursor: (visitType && specialization) ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
+              Continue →
+            </button>
+          </div>
+        )}
+
+        {/* ══ STEP 3: What did you like? ══ */}
+        {step === 3 && (
+          <div className="anim-up review-card" style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: '0 8px 40px rgba(14,165,233,0.1)', border: '1px solid #e0f2fe' }}>
+            <button onClick={() => setStep(2)} style={{ background: 'none', border: 'none', color: theme.primary, fontWeight: 600, fontSize: 13, cursor: 'pointer', marginBottom: 16, padding: 0 }}>← Back</button>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>💙</div>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: 0 }}>What did you like?</h2>
@@ -549,25 +678,25 @@ export default function HospitalReviewPage({ params }) {
                 const sel = liked.includes(opt.key);
                 return (
                   <button key={opt.key} onClick={() => toggleLiked(opt.key)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 14, border: `2px solid ${sel ? THEME.primary : '#e2e8f0'}`, background: sel ? THEME.light : '#fafafa', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', fontSize: 13, fontWeight: sel ? 700 : 500, color: sel ? THEME.dark : '#374151' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 14, border: `2px solid ${sel ? theme.primary : '#e2e8f0'}`, background: sel ? theme.light : '#fafafa', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', fontSize: 13, fontWeight: sel ? 700 : 500, color: sel ? theme.dark : '#374151' }}>
                     <span style={{ fontSize: 18, flexShrink: 0 }}>{opt.emoji}</span>
                     <span style={{ minWidth: 0, flex: 1, overflowWrap: 'break-word' }}>{opt.label}</span>
-                    {sel && <span style={{ flexShrink: 0, color: THEME.primary, fontSize: 14 }}>✓</span>}
+                    {sel && <span style={{ flexShrink: 0, color: theme.primary, fontSize: 14 }}>✓</span>}
                   </button>
                 );
               })}
             </div>
-            <button onClick={() => setStep(3)} disabled={liked.length === 0}
-              style={{ width: '100%', padding: '15px', borderRadius: 14, background: liked.length ? THEME.gradient : '#e2e8f0', color: '#fff', border: 'none', fontWeight: 700, fontSize: 15, cursor: liked.length ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
+            <button onClick={() => setStep(4)} disabled={liked.length === 0}
+              style={{ width: '100%', padding: '15px', borderRadius: 14, background: liked.length ? theme.gradient : '#e2e8f0', color: '#fff', border: 'none', fontWeight: 700, fontSize: 15, cursor: liked.length ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
               Continue → {liked.length > 0 && `(${liked.length} selected)`}
             </button>
           </div>
         )}
 
-        {/* ══ STEP 3: Mode + Content ══ */}
-        {step === 3 && (
+        {/* ══ STEP 4: Mode + Content ══ */}
+        {step === 4 && (
           <div className="anim-up review-card" style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: '0 8px 40px rgba(14,165,233,0.1)', border: '1px solid #e0f2fe' }}>
-            <button onClick={() => setStep(2)} style={{ background: 'none', border: 'none', color: THEME.primary, fontWeight: 600, fontSize: 13, cursor: 'pointer', marginBottom: 20, padding: 0 }}>← Back</button>
+            <button onClick={() => setStep(3)} style={{ background: 'none', border: 'none', color: theme.primary, fontWeight: 600, fontSize: 13, cursor: 'pointer', marginBottom: 20, padding: 0 }}>← Back</button>
 
             {/* Mode selector */}
             {!mode && (
@@ -579,8 +708,8 @@ export default function HospitalReviewPage({ params }) {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <button onClick={() => setMode('auto')}
-                    style={{ padding: '20px 22px', borderRadius: 18, border: `2px solid #e0f2fe`, background: THEME.light, cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}
-                    onMouseOver={e => e.currentTarget.style.borderColor = THEME.primary}
+                    style={{ padding: '20px 22px', borderRadius: 18, border: `2px solid #e0f2fe`, background: theme.light, cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = theme.primary}
                     onMouseOut={e => e.currentTarget.style.borderColor = '#e0f2fe'}>
                     <div style={{ fontSize: 24, marginBottom: 6 }}>✨</div>
                     <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Auto-Generate Review</div>
@@ -588,7 +717,7 @@ export default function HospitalReviewPage({ params }) {
                   </button>
                   <button onClick={() => setMode('manual')}
                     style={{ padding: '20px 22px', borderRadius: 18, border: `2px solid #e0f2fe`, background: '#fafafa', cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s' }}
-                    onMouseOver={e => e.currentTarget.style.borderColor = THEME.primary}
+                    onMouseOver={e => e.currentTarget.style.borderColor = theme.primary}
                     onMouseOut={e => e.currentTarget.style.borderColor = '#e0f2fe'}>
                     <div style={{ fontSize: 24, marginBottom: 6 }}>✏️</div>
                     <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 16 }}>Write In Your Own Words</div>
@@ -613,7 +742,7 @@ export default function HospitalReviewPage({ params }) {
                   <div style={{ display: 'flex', gap: 10 }}>
                     {[{ key:'english', label:'English 🇬🇧' }, { key:'kannada', label:'Kannada (Roman) 🌟' }].map(l => (
                       <button key={l.key} onClick={() => setLang(l.key)}
-                        style={{ flex: 1, padding: '10px', borderRadius: 12, border: `2px solid ${lang === l.key ? THEME.primary : '#e2e8f0'}`, background: lang === l.key ? THEME.light : '#fafafa', fontWeight: 600, fontSize: 13, color: lang === l.key ? THEME.dark : '#374151', cursor: 'pointer', transition: 'all 0.15s' }}>
+                        style={{ flex: 1, padding: '10px', borderRadius: 12, border: `2px solid ${lang === l.key ? theme.primary : '#e2e8f0'}`, background: lang === l.key ? theme.light : '#fafafa', fontWeight: 600, fontSize: 13, color: lang === l.key ? theme.dark : '#374151', cursor: 'pointer', transition: 'all 0.15s' }}>
                         {l.label}
                       </button>
                     ))}
@@ -626,9 +755,9 @@ export default function HospitalReviewPage({ params }) {
                   <div className="type-row" style={{ display: 'flex', gap: 10 }}>
                     {REVIEW_TYPES.map(t => (
                       <button key={t.key} onClick={() => setReviewType(t.key)}
-                        style={{ flex: 1, padding: '12px 8px', borderRadius: 14, border: `2px solid ${reviewType === t.key ? THEME.primary : '#e2e8f0'}`, background: reviewType === t.key ? THEME.light : '#fafafa', cursor: 'pointer', transition: 'all 0.15s' }}>
+                        style={{ flex: 1, padding: '12px 8px', borderRadius: 14, border: `2px solid ${reviewType === t.key ? theme.primary : '#e2e8f0'}`, background: reviewType === t.key ? theme.light : '#fafafa', cursor: 'pointer', transition: 'all 0.15s' }}>
                         <div style={{ fontSize: 20, marginBottom: 4 }}>{t.emoji}</div>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: reviewType === t.key ? THEME.dark : '#374151' }}>{t.label}</div>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: reviewType === t.key ? theme.dark : '#374151' }}>{t.label}</div>
                         <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{t.words}</div>
                       </button>
                     ))}
@@ -636,7 +765,7 @@ export default function HospitalReviewPage({ params }) {
                 </div>
 
                 <button onClick={handleGenerate} disabled={loading}
-                  style={{ width: '100%', padding: '16px', borderRadius: 14, background: THEME.gradient, color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.8 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  style={{ width: '100%', padding: '16px', borderRadius: 14, background: theme.gradient, color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.8 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                   {loading ? (
                     <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Generating...</>
                   ) : '✨ Generate My Review'}
@@ -663,13 +792,13 @@ export default function HospitalReviewPage({ params }) {
                   onChange={e => setManualText(e.target.value)}
                   placeholder="Write your experience here... (doctor's name, what was good, how you felt)"
                   style={{ width: '100%', minHeight: 130, padding: '14px 16px', borderRadius: 14, border: '2px solid #e2e8f0', fontSize: 14, lineHeight: 1.6, color: '#0f172a', background: '#fff', resize: 'vertical', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.2s', boxSizing: 'border-box' }}
-                  onFocus={e => e.target.style.borderColor = THEME.primary}
+                  onFocus={e => e.target.style.borderColor = theme.primary}
                   onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                 />
                 <p style={{ fontSize: 12, color: '#94a3b8', margin: '6px 0 20px', textAlign: 'right' }}>{manualText.length} characters</p>
 
                 <button onClick={handlePolish} disabled={!manualText.trim() || polishing}
-                  style={{ width: '100%', padding: '16px', borderRadius: 14, background: manualText.trim() ? THEME.gradient : '#e2e8f0', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: manualText.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  style={{ width: '100%', padding: '16px', borderRadius: 14, background: manualText.trim() ? theme.gradient : '#e2e8f0', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: manualText.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                   {polishing ? (
                     <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Polishing...</>
                   ) : '✨ Polish & Structure My Review'}
@@ -679,8 +808,8 @@ export default function HospitalReviewPage({ params }) {
           </div>
         )}
 
-        {/* ══ STEP 4: Result ══ */}
-        {step === 4 && activeReview && (
+        {/* ══ STEP 5: Result ══ */}
+        {step === 5 && activeReview && (
           <div className="anim-up">
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <span className="anim-cel" style={{ display: 'inline-block', fontSize: 52 }}>🎉</span>
@@ -695,7 +824,7 @@ export default function HospitalReviewPage({ params }) {
             {/* Review card */}
             <div className="review-card" style={{ background: '#fff', borderRadius: 24, padding: 28, boxShadow: '0 8px 40px rgba(14,165,233,0.12)', border: '1px solid #e0f2fe', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: THEME.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 16 }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: theme.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 16 }}>
                   {(hospital.shop_name || 'H')[0]}
                 </div>
                 <div>
@@ -718,7 +847,7 @@ export default function HospitalReviewPage({ params }) {
               🔄 {mode === 'manual' ? 'Re-Polish' : 'Generate Different Version'}
             </button>
 
-            <button onClick={() => { setStep(3); setMode(null); }}
+            <button onClick={() => { setStep(4); setMode(null); }}
               style={{ width: '100%', padding: '11px', borderRadius: 14, background: 'transparent', color: '#94a3b8', border: 'none', fontWeight: 500, fontSize: 13, cursor: 'pointer' }}>
               ← Start Over
             </button>
