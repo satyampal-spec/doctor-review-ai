@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { generateShopReview, CATEGORY_CONFIG } from '@/lib/shopReviewGenerator';
 
@@ -135,6 +136,7 @@ const ANIM = `
 
 export default function ClinicReviewPage({ params }) {
   const { shopId } = params;
+  const router = useRouter();
   const [shop, setShop] = useState(null);
   const [notFound, setNotFound] = useState(false);
 
@@ -162,6 +164,14 @@ export default function ClinicReviewPage({ params }) {
     (async () => {
       const { data, error } = await supabase.from('businesses').select('*').eq('id', shopId).single();
       if (error || !data) { setNotFound(true); return; }
+      // Some categories are stored as business_type='clinic' purely to satisfy
+      // the DB's fixed check constraint, but actually belong to a dedicated
+      // page identified by sub_type (e.g. 'mponline' for passport/CSC
+      // agencies) — send them there instead of rendering generic clinic copy.
+      if (data.sub_type === 'mponline') {
+        router.replace(`/review/mponline/${shopId}`);
+        return;
+      }
       setShop(data);
       await supabase.from('businesses').update({ scans: (data.scans || 0) + 1 }).eq('id', shopId);
     })();
