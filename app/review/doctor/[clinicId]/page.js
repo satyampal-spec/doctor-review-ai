@@ -178,6 +178,7 @@ export default function DoctorReviewPage({ params }) {
   // it) would come out byte-identical for a given doctor.
   const [variant, setVariant] = useState(() => Math.floor(Math.random() * 1e9));
   const [copied, setCopied] = useState('');
+  const [generatedReviewId, setGeneratedReviewId] = useState(null);
 
   const GOOGLE_REVIEW_URL = doctor?.google_profile_url || 'https://share.google/iBPK7TfzoXQ9Hi94J';
 
@@ -199,48 +200,85 @@ export default function DoctorReviewPage({ params }) {
       .eq('id', clinicId);
   };
 
+  // Logs the actual generated text to `generated_reviews` (separate from
+  // the `clinics` counter columns, which only ever tracked counts) — lets
+  // us see what's actually being generated, and is what the auto-generate
+  // dedup check below queries against.
+  const logGeneratedReview = async (type, text) => {
+    const { data } = await supabase.from('generated_reviews')
+      .insert({ clinic_id: clinicId, review_type: type, review_text: text })
+      .select('id').single();
+    if (data) setGeneratedReviewId(data.id);
+  };
+
+  // Auto-generate has no patient-typed text to make it unique, so this
+  // checks the new text against every 'auto' review already logged for this
+  // doctor and re-rolls (new seed) on an exact match, up to 5 tries — a
+  // real guarantee instead of just relying on combinatorial odds.
+  const generateUniqueAutoReview = async () => {
+    let text = '';
+    let v = variant;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      text = generateShortAutoReview(doctor, v);
+      const { data: dup } = await supabase.from('generated_reviews')
+        .select('id').eq('clinic_id', clinicId).eq('review_type', 'auto').eq('review_text', text).limit(1);
+      if (!dup || dup.length === 0) break;
+      v = v + 1 + Math.floor(Math.random() * 1000);
+    }
+    setVariant(v + 1);
+    return text;
+  };
+
   const handleKeepRaw = async () => {
     if (!manualText.trim()) return;
     setKeeping(true);
     await new Promise(r => setTimeout(r, 500));
-    setResultText(cleanTypedText(manualText));
+    const text = cleanTypedText(manualText);
+    setResultText(text);
     setResultType('raw');
     setKeeping(false);
     setStep('result');
     await bumpReviewsGenerated();
+    await logGeneratedReview('raw', text);
   };
 
   const handlePolish = async () => {
     if (!manualText.trim()) return;
     setPolishing(true);
     await new Promise(r => setTimeout(r, 700));
-    setResultText(polishReview(manualText, doctor, variant));
+    const text = polishReview(manualText, doctor, variant);
+    setResultText(text);
     setVariant(v => v + 1);
     setResultType('polished');
     setPolishing(false);
     setStep('result');
     await bumpReviewsGenerated();
+    await logGeneratedReview('polished', text);
   };
 
   const handleAutoNext = async () => {
     if (manualText.trim()) return; // only the blank-box fallback
     setAutoing(true);
     await new Promise(r => setTimeout(r, 600));
-    setResultText(generateShortAutoReview(doctor, variant));
-    setVariant(v => v + 1);
+    const text = await generateUniqueAutoReview();
+    setResultText(text);
     setResultType('auto');
     setAutoing(false);
     setStep('result');
     await bumpReviewsGenerated();
+    await logGeneratedReview('auto', text);
   };
 
-  const regenerate = () => {
+  const regenerate = async () => {
     if (resultType === 'polished') {
-      setResultText(polishReview(manualText, doctor, variant));
+      const text = polishReview(manualText, doctor, variant);
+      setResultText(text);
       setVariant(v => v + 1);
+      await logGeneratedReview('polished', text);
     } else if (resultType === 'auto') {
-      setResultText(generateShortAutoReview(doctor, variant));
-      setVariant(v => v + 1);
+      const text = await generateUniqueAutoReview();
+      setResultText(text);
+      await logGeneratedReview('auto', text);
     }
   };
 
@@ -249,6 +287,9 @@ export default function DoctorReviewPage({ params }) {
     setCopied('copied');
     const { data: fresh } = await supabase.from('clinics').select('reviews_submitted').eq('id', clinicId).single();
     await supabase.from('clinics').update({ reviews_submitted: (fresh?.reviews_submitted || 0) + 1 }).eq('id', clinicId);
+    if (generatedReviewId) {
+      await supabase.from('generated_reviews').update({ submitted: true }).eq('id', generatedReviewId);
+    }
     setTimeout(() => {
       window.open(GOOGLE_REVIEW_URL, '_blank');
       setCopied('');
@@ -373,7 +414,7 @@ export default function DoctorReviewPage({ params }) {
               </button>
             )}
 
-            <button onClick={() => { setStep('write'); setResultType(null); }}
+            <button onClick={() => { setStep('write'); setResultType(null); setGeneratedReviewId(null); }}
               style={{ width: '100%', padding: '11px', borderRadius: 14, background: 'transparent', color: '#94a3b8', border: 'none', fontWeight: 500, fontSize: 13, cursor: 'pointer' }}>
               ← Start Over
             </button>
