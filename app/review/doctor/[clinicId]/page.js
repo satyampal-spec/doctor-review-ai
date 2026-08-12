@@ -131,7 +131,7 @@ function addKeywordClosing(text, doctor, variant) {
     `${subject} ${mentionsName ? 'are' : 'is'} genuinely one of the best ${role}s I've been to${loc ? ' in ' + loc : ''}.`,
     `Would highly recommend ${mentionsName ? 'them' : name} for ${service}.`,
     `If you need ${service}, ${mentionsName ? "they're" : name + ' is'} the one to see${loc ? ' in ' + loc : ''}.`,
-    `Truly grateful — ${mentionsName ? 'they' : name} made ${service} so much easier than I expected.`,
+    `Truly grateful that ${mentionsName ? 'they' : name} made ${service} so much easier than I expected.`,
   ];
   return `${text} ${pick(closings, r)}`;
 }
