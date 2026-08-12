@@ -66,7 +66,9 @@ function specialtyPhrases(specialization) {
   return { roles, services: ['consultation and treatment', 'diagnosis and care', 'the entire treatment process'] };
 }
 
-// ── Grammar/flow cleanup only, exactly what the patient typed ────
+// ── "Keep As Written": exactly the patient's own words. Only mechanical
+// fixes (capitalization, Dr. formatting, trailing punctuation) — never
+// changes a word they actually chose. ─────────────────────────────
 function cleanTypedText(rawText) {
   let text = rawText.trim();
   if (!text) return '';
@@ -74,6 +76,22 @@ function cleanTypedText(rawText) {
   text = text.replace(/\bi\b/g, 'I');
   text = text.replace(/(^|[.!?]\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
   if (!/[.!?]$/.test(text)) text += '.';
+  text = text.replace(/\s{2,}/g, ' ').trim();
+  text = text.charAt(0).toUpperCase() + text.slice(1);
+  return text;
+}
+
+// ── "Polish": grammar/wording fix ONLY — same mechanical fixes as above,
+// plus a small set of wording improvements (never adds a sentence, never
+// mentions the doctor's specialty/keywords — that belongs exclusively to
+// the auto-generate fallback below). This is rule-based, not a real
+// spellchecker: it can clean up known awkward phrasings but can't
+// reconstruct genuinely garbled/misspelled text (e.g. "nic edr") — that
+// needs an actual language model reading it in context, which this app
+// doesn't call out to today. ─────────────────────────────────────────
+function polishReview(rawText) {
+  let text = cleanTypedText(rawText);
+  if (!text) return '';
   text = text
     .replace(/\bis good\b/gi, 'is very good')
     .replace(/\bvery very\b/gi, 'very')
@@ -81,35 +99,11 @@ function cleanTypedText(rawText) {
     .replace(/\bnice\b/gi, 'great')
     .replace(/\s{2,}/g, ' ')
     .trim();
-  // Capitalize last, after the phrase replacements above — a replacement
-  // landing at position 0 (e.g. "good doctor" -> "highly skilled doctor")
-  // otherwise overwrites the capital letter with its own lowercase literal.
+  // Re-capitalize: a replacement landing at position 0 (e.g. "good doctor"
+  // -> "highly skilled doctor") would otherwise overwrite the capital
+  // letter with its own lowercase literal.
   text = text.charAt(0).toUpperCase() + text.slice(1);
   return text;
-}
-
-// Weaves in one natural, specialty-specific closing line built from the
-// doctor's real specialization + location — deliberately just ONE sentence
-// so it reads as a genuine add-on, not keyword-stuffed AI copy.
-function polishReview(rawText, doctor, variant) {
-  const text = cleanTypedText(rawText);
-  if (!text) return '';
-  const r = seeded(variant ?? 0);
-  const { roles, services } = specialtyPhrases(doctor.specialization);
-  const role = pick(roles, r);
-  const service = pick(services, r);
-  const loc = displayLoc(doctor.location, r);
-  const name = doctor.doctor_name || 'the doctor';
-  const firstName = (name.split(' ').find(w => w.length > 3) || '').toLowerCase();
-  const mentionsName = firstName && text.toLowerCase().includes(firstName);
-  const subject = mentionsName ? 'They' : name;
-  const closings = [
-    `${subject} ${mentionsName ? 'are' : 'is'} genuinely one of the best ${role}s I've been to${loc ? ' in ' + loc : ''}.`,
-    `Would highly recommend ${mentionsName ? 'them' : name} for ${service}.`,
-    `If you need ${service}, ${mentionsName ? "they're" : name + ' is'} the one to see${loc ? ' in ' + loc : ''}.`,
-    `Truly grateful — ${mentionsName ? 'they' : name} made ${service} so much easier than I expected.`,
-  ];
-  return `${text} ${pick(closings, r)}`;
 }
 
 // Fallback for patients who leave the box blank — a short (1-2 sentence),
@@ -249,9 +243,8 @@ export default function DoctorReviewPage({ params }) {
     if (!manualText.trim()) return;
     setPolishing(true);
     await new Promise(r => setTimeout(r, 700));
-    const text = polishReview(manualText, doctor, variant);
+    const text = polishReview(manualText);
     setResultText(text);
-    setVariant(v => v + 1);
     setResultType('polished');
     setPolishing(false);
     setStep('result');
@@ -272,17 +265,13 @@ export default function DoctorReviewPage({ params }) {
     await logGeneratedReview('auto', text);
   };
 
+  // Only meaningful for 'auto' — 'polished' and 'raw' are both deterministic
+  // functions of exactly what the patient typed, so there's nothing to reroll.
   const regenerate = async () => {
-    if (resultType === 'polished') {
-      const text = polishReview(manualText, doctor, variant);
-      setResultText(text);
-      setVariant(v => v + 1);
-      await logGeneratedReview('polished', text);
-    } else if (resultType === 'auto') {
-      const text = await generateUniqueAutoReview();
-      setResultText(text);
-      await logGeneratedReview('auto', text);
-    }
+    if (resultType !== 'auto') return;
+    const text = await generateUniqueAutoReview();
+    setResultText(text);
+    await logGeneratedReview('auto', text);
   };
 
   const copyAndOpen = async () => {
@@ -410,7 +399,7 @@ export default function DoctorReviewPage({ params }) {
               </button>
             </div>
 
-            {(resultType === 'polished' || resultType === 'auto') && (
+            {resultType === 'auto' && (
               <button onClick={regenerate}
                 style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'transparent', color: '#64748b', border: '2px solid #e2e8f0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 10 }}>
                 🔄 Generate Different Version
