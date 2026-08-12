@@ -31,7 +31,8 @@ export async function POST(request) {
   });
 
   if (!res.ok) {
-    return Response.json({ error: 'upstream_error' }, { status: 502 });
+    const detail = await res.text().catch(() => '');
+    return Response.json({ error: 'upstream_error', status: res.status, detail }, { status: 502 });
   }
 
   const data = await res.json();
