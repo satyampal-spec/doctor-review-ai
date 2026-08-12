@@ -109,6 +109,46 @@ function polishReview(rawText, doctor, variant) {
   return `${text} ${pick(closings, r)}`;
 }
 
+// Fallback for patients who leave the box blank — a short (1-2 sentence),
+// fully-templated review built from the doctor's specialty + location.
+// Combinatorial space (openers × closers × role/service/location variants)
+// is large enough that a repeat is practically impossible, and `variant`
+// is seeded from Math.random()/Date.now() per page load (not a sequential
+// counter) so two different patients landing on the same doctor never start
+// from the same seed. Deliberately short, per spec — this is the "just
+// click Next" path, not a long generated essay.
+function generateShortAutoReview(doctor, variant) {
+  const r = seeded(variant);
+  const { roles, services } = specialtyPhrases(doctor.specialization);
+  const role = pick(roles, r);
+  const service = pick(services, r);
+  const loc = displayLoc(doctor.location, r) || 'Bengaluru';
+  const name = doctor.doctor_name || 'The doctor';
+  const openers = [
+    `Had a great experience with ${name}.`,
+    `${name} is an excellent ${role}.`,
+    `Really happy with my visit to ${name}.`,
+    `Very satisfied with the treatment from ${name}.`,
+    `${name} took great care of me during my visit.`,
+    `Excellent experience overall with ${name}.`,
+    `My visit to ${name} was smooth and reassuring.`,
+    `Genuinely impressed with ${name}.`,
+    `${name} made the whole process stress-free.`,
+    `Grateful for the care I received from ${name}.`,
+  ];
+  const closers = [
+    `Highly skilled with ${service}.`,
+    `Great support for ${service}.`,
+    `Would recommend for ${service}.`,
+    `One of the best ${role}s in ${loc}.`,
+    `Clear explanations and genuine care throughout.`,
+    `Professional, patient, and thorough.`,
+    `Truly one of the best in ${loc}.`,
+    `Handled my ${service} really well.`,
+  ];
+  return `${pick(openers, r)} ${pick(closers, r)}`;
+}
+
 function Stars() {
   return <span style={{ color: '#fbbf24', fontSize: 18 }}>{'★★★★★'}</span>;
 }
@@ -130,9 +170,13 @@ export default function DoctorReviewPage({ params }) {
   const [manualText, setManualText] = useState('');
   const [keeping, setKeeping] = useState(false);
   const [polishing, setPolishing] = useState(false);
-  const [resultType, setResultType] = useState(null); // 'raw' | 'polished'
+  const [autoing, setAutoing] = useState(false);
+  const [resultType, setResultType] = useState(null); // 'raw' | 'polished' | 'auto'
   const [resultText, setResultText] = useState('');
-  const [variant, setVariant] = useState(0);
+  // Seeded from randomness at mount, not a fixed 0 — otherwise every
+  // patient's first auto-generated review (no typed text to differentiate
+  // it) would come out byte-identical for a given doctor.
+  const [variant, setVariant] = useState(() => Math.floor(Math.random() * 1e9));
   const [copied, setCopied] = useState('');
 
   const GOOGLE_REVIEW_URL = doctor?.google_profile_url || 'https://share.google/iBPK7TfzoXQ9Hi94J';
@@ -178,10 +222,26 @@ export default function DoctorReviewPage({ params }) {
     await bumpReviewsGenerated();
   };
 
-  const regenerate = () => {
-    if (resultType !== 'polished') return;
-    setResultText(polishReview(manualText, doctor, variant));
+  const handleAutoNext = async () => {
+    if (manualText.trim()) return; // only the blank-box fallback
+    setAutoing(true);
+    await new Promise(r => setTimeout(r, 600));
+    setResultText(generateShortAutoReview(doctor, variant));
     setVariant(v => v + 1);
+    setResultType('auto');
+    setAutoing(false);
+    setStep('result');
+    await bumpReviewsGenerated();
+  };
+
+  const regenerate = () => {
+    if (resultType === 'polished') {
+      setResultText(polishReview(manualText, doctor, variant));
+      setVariant(v => v + 1);
+    } else if (resultType === 'auto') {
+      setResultText(generateShortAutoReview(doctor, variant));
+      setVariant(v => v + 1);
+    }
   };
 
   const copyAndOpen = async () => {
@@ -252,19 +312,30 @@ export default function DoctorReviewPage({ params }) {
             />
             <p style={{ fontSize: 12, color: '#94a3b8', margin: '6px 0 20px', textAlign: 'right' }}>{manualText.length} characters</p>
 
-            <button onClick={handleKeepRaw} disabled={!manualText.trim() || keeping || polishing}
-              style={{ width: '100%', padding: '16px', borderRadius: 14, background: manualText.trim() ? THEME.gradient : '#e2e8f0', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: manualText.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
-              {keeping ? (
-                <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Preparing...</>
-              ) : 'Keep It As I Wrote It'}
-            </button>
+            {manualText.trim() ? (
+              <>
+                <button onClick={handleKeepRaw} disabled={keeping || polishing}
+                  style={{ width: '100%', padding: '16px', borderRadius: 14, background: THEME.gradient, color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
+                  {keeping ? (
+                    <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Preparing...</>
+                  ) : 'Keep It As I Wrote It'}
+                </button>
 
-            <button onClick={handlePolish} disabled={!manualText.trim() || keeping || polishing}
-              style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'transparent', color: manualText.trim() ? THEME.dark : '#94a3b8', border: `2px solid ${manualText.trim() ? THEME.primary : '#e2e8f0'}`, fontWeight: 700, fontSize: 14, cursor: manualText.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-              {polishing ? (
-                <><div style={{ width: 18, height: 18, border: `3px solid ${THEME.ring}`, borderTopColor: THEME.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Polishing...</>
-              ) : '✨ Polish My Review'}
-            </button>
+                <button onClick={handlePolish} disabled={keeping || polishing}
+                  style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'transparent', color: THEME.dark, border: `2px solid ${THEME.primary}`, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  {polishing ? (
+                    <><div style={{ width: 18, height: 18, border: `3px solid ${THEME.ring}`, borderTopColor: THEME.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Polishing...</>
+                  ) : '✨ Polish My Review'}
+                </button>
+              </>
+            ) : (
+              <button onClick={handleAutoNext} disabled={autoing}
+                style={{ width: '100%', padding: '16px', borderRadius: 14, background: THEME.gradient, color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                {autoing ? (
+                  <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Preparing...</>
+                ) : 'Next →'}
+              </button>
+            )}
           </div>
         )}
 
@@ -295,7 +366,7 @@ export default function DoctorReviewPage({ params }) {
               </button>
             </div>
 
-            {resultType === 'polished' && (
+            {(resultType === 'polished' || resultType === 'auto') && (
               <button onClick={regenerate}
                 style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'transparent', color: '#64748b', border: '2px solid #e2e8f0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 10 }}>
                 🔄 Generate Different Version
