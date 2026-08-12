@@ -73,7 +73,6 @@ function cleanTypedText(rawText) {
   text = text.replace(/\bdr\.?\s*([a-z])/gi, (_, first) => `Dr. ${first.toUpperCase()}`);
   text = text.replace(/\bi\b/g, 'I');
   text = text.replace(/(^|[.!?]\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
-  text = text.charAt(0).toUpperCase() + text.slice(1);
   if (!/[.!?]$/.test(text)) text += '.';
   text = text
     .replace(/\bis good\b/gi, 'is very good')
@@ -82,6 +81,10 @@ function cleanTypedText(rawText) {
     .replace(/\bnice\b/gi, 'great')
     .replace(/\s{2,}/g, ' ')
     .trim();
+  // Capitalize last, after the phrase replacements above — a replacement
+  // landing at position 0 (e.g. "good doctor" -> "highly skilled doctor")
+  // otherwise overwrites the capital letter with its own lowercase literal.
+  text = text.charAt(0).toUpperCase() + text.slice(1);
   return text;
 }
 
