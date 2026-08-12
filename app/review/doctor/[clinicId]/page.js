@@ -73,6 +73,7 @@ function cleanTypedText(rawText) {
   let text = rawText.trim();
   if (!text) return '';
   text = text.replace(/\bdr\.?\s*([a-z])/gi, (_, first) => `Dr. ${first.toUpperCase()}`);
+  text = text.replace(/\bi\s+m\b/gi, "I'm");
   text = text.replace(/\bi\b/g, 'I');
   text = text.replace(/(^|[.!?]\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
   if (!/[.!?]$/.test(text)) text += '.';
@@ -239,9 +240,9 @@ export default function DoctorReviewPage({ params }) {
     await logGeneratedReview('raw', text);
   };
 
-  // Tries real AI grammar/spelling correction (server route, only runs if
-  // ANTHROPIC_API_KEY is configured) — falls back to the rule-based
-  // polishReview() on any failure (key not set yet, network error, upstream
+  // Tries real grammar/spelling correction via the free /api/polish route
+  // (LanguageTool, no API key or billing needed) — falls back to the
+  // rule-based polishReview() on any failure (network error, upstream
   // error) so Polish never leaves the patient stuck.
   const polishWithAI = async (rawText) => {
     try {
@@ -253,7 +254,11 @@ export default function DoctorReviewPage({ params }) {
       if (!res.ok) throw new Error('polish api failed');
       const data = await res.json();
       if (!data.polished) throw new Error('empty polish response');
-      return data.polished;
+      // LanguageTool fixes words but doesn't guarantee trailing punctuation
+      // or "I" capitalization — run the same mechanical pass Keep As Written
+      // uses on top, so formatting is consistent regardless of what the
+      // grammar checker did or didn't catch.
+      return cleanTypedText(data.polished);
     } catch {
       return polishReview(rawText);
     }
