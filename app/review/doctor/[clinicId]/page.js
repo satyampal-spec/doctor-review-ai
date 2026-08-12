@@ -35,23 +35,35 @@ function displayLoc(loc, r) {
 // specialization (from Supabase) — new doctors automatically get
 // sensible phrasing with zero code changes; add a specific match
 // below only when a specialty needs hand-tuned wording. ─────────
+// roles/services pulled from real patient search behavior (Google "People
+// also ask" + "People also search for" + local-pack listing titles for each
+// specialty + Bengaluru, checked directly, not guessed) — e.g. "general
+// physician" outsearches "internal medicine specialist" for that specialty,
+// "robotic knee replacement" and "normal delivery" are real high-intent
+// long-tail terms, etc. `role` is an array so phrasing varies patient to
+// patient instead of every review repeating the identical exact-match term,
+// which reads more human and is also better local-SEO practice (varied
+// language across reviews > one repeated phrase).
 const SPECIALTY_PHRASES = [
-  { test: /internal medicine|general medicine/i, role: 'internal medicine specialist', services: ['managing chronic conditions like diabetes and blood pressure', 'complete health checkups', 'fever, infections and general health concerns'] },
-  { test: /orthoped/i, role: 'orthopedician', services: ['joint pain and knee treatment', 'fracture and sports injury care', 'joint replacement and bone-related issues'] },
-  { test: /pediatric/i, role: 'child specialist', services: ['child vaccination and growth checkups', 'newborn and infant care', 'fever and infections in kids'] },
-  { test: /gynecolog|obstetric/i, role: 'gynecologist', services: ['pregnancy care and delivery', "women's health checkups", 'gynecological consultations'] },
-  { test: /laparoscopic|robotic/i, role: 'laparoscopic and robotic surgeon', services: ['robotic surgery', 'minimally invasive laparoscopic procedures', 'complex surgical care'] },
-  { test: /general surgery|surgeon/i, role: 'general surgeon', services: ['laparoscopic surgery', 'hernia and gallbladder surgery', 'minimally invasive procedures'] },
-  { test: /\bent\b|ear.*nose.*throat/i, role: 'ENT specialist', services: ['ear, nose and throat treatment', 'sinus and hearing issues', 'nose and throat problems'] },
-  { test: /cardiolog/i, role: 'cardiologist', services: ['heart checkups', 'managing blood pressure and cholesterol', 'cardiac care'] },
-  { test: /urolog/i, role: 'urologist', services: ['kidney stone treatment', 'urology consultations', 'prostate care'] },
+  { test: /internal medicine|general medicine/i, roles: ['internal medicine specialist', 'general physician', 'physician'], services: ['managing chronic conditions like diabetes and blood pressure', 'complete health checkups', 'fever, infections and general health concerns', 'general physician consultations'] },
+  { test: /orthoped/i, roles: ['orthopedician', 'orthopedic surgeon', 'orthopedist'], services: ['knee pain and joint replacement', 'fracture and sports injury treatment', 'robotic knee replacement', 'shoulder and joint pain treatment'] },
+  { test: /pediatric/i, roles: ['pediatrician', 'child specialist'], services: ['child vaccination and growth checkups', 'newborn and infant care', 'fever and infections in kids'] },
+  { test: /gynecolog|obstetric/i, roles: ['gynecologist', 'obstetrician'], services: ['pregnancy care and normal delivery', "women's health checkups", 'gynecological consultations'] },
+  { test: /laparoscopic|robotic/i, roles: ['laparoscopic surgeon', 'robotic surgeon'], services: ['minimally invasive laparoscopic surgery', 'gallbladder and hernia surgery', 'robotic surgery'] },
+  { test: /general surgery|surgeon/i, roles: ['general surgeon'], services: ['laparoscopic surgery', 'hernia and gallbladder surgery', 'minimally invasive procedures'] },
+  { test: /\bent\b|ear.*nose.*throat/i, roles: ['ENT specialist'], services: ['ear, nose and throat treatment', 'hearing loss and sinus treatment', 'nose and throat problems'] },
+  { test: /cardiolog/i, roles: ['cardiologist'], services: ['heart checkups', 'managing blood pressure and cholesterol', 'cardiac care'] },
+  { test: /urolog/i, roles: ['urologist'], services: ['kidney stone treatment', 'urology consultations', 'prostate care'] },
+  { test: /gastro/i, roles: ['gastroenterologist'], services: ['endoscopy and gastro consultations', 'stomach and digestive issues', 'liver and digestive health'] },
+  { test: /physio/i, roles: ['physiotherapist'], services: ['back pain and knee pain treatment', 'sports injury rehab', 'post-surgery physiotherapy'] },
+  { test: /dietit|nutrition/i, roles: ['dietitian', 'nutritionist'], services: ['weight loss and diet planning', 'personalized nutrition plans', 'diet consultations'] },
 ];
 
 function specialtyPhrases(specialization) {
   const found = SPECIALTY_PHRASES.find(sp => sp.test.test(specialization || ''));
   if (found) return found;
-  const role = specialization ? specialization.toLowerCase() : 'doctor';
-  return { role, services: ['consultation and treatment', 'diagnosis and care', 'the entire treatment process'] };
+  const roles = [specialization ? specialization.toLowerCase() : 'doctor'];
+  return { roles, services: ['consultation and treatment', 'diagnosis and care', 'the entire treatment process'] };
 }
 
 // ── Grammar/flow cleanup only, exactly what the patient typed ────
@@ -80,7 +92,8 @@ function polishReview(rawText, doctor, variant) {
   const text = cleanTypedText(rawText);
   if (!text) return '';
   const r = seeded(variant ?? 0);
-  const { role, services } = specialtyPhrases(doctor.specialization);
+  const { roles, services } = specialtyPhrases(doctor.specialization);
+  const role = pick(roles, r);
   const service = pick(services, r);
   const loc = displayLoc(doctor.location, r);
   const name = doctor.doctor_name || 'the doctor';
