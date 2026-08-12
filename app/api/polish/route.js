@@ -31,8 +31,8 @@ export async function POST(request) {
   });
 
   if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    return Response.json({ error: 'upstream_error', status: res.status, detail }, { status: 502 });
+    console.error('polish upstream error', res.status, await res.text().catch(() => ''));
+    return Response.json({ error: 'upstream_error' }, { status: 502 });
   }
 
   const data = await res.json();
