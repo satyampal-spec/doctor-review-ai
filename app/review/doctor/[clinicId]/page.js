@@ -132,8 +132,23 @@ function addKeywordClosing(text, doctor, variant) {
     `Would highly recommend ${mentionsName ? 'them' : name} for ${service}.`,
     `If you need ${service}, ${mentionsName ? "they're" : name + ' is'} the one to see${loc ? ' in ' + loc : ''}.`,
     `Truly grateful that ${mentionsName ? 'they' : name} made ${service} so much easier than I expected.`,
+    `${subject} ${mentionsName ? 'are' : 'is'} great with ${service}.`,
+    `Would go back to ${mentionsName ? 'them' : name} again without a second thought.`,
+    `Can't recommend ${mentionsName ? 'them' : name} enough for ${service}.`,
   ];
-  return `${text} ${pick(closings, r)}`;
+  // Also mention the hospital ~4 in 10 times — good for the hospital's
+  // own search visibility, not just the doctor's, without doing it on
+  // every single review (would read repetitive/templated).
+  const clinicName = doctor.clinic_name;
+  const closingsWithHospital = clinicName ? [
+    `${subject} ${mentionsName ? 'are' : 'is'} genuinely one of the best ${role}s I've been to at ${clinicName}${loc ? ' in ' + loc : ''}.`,
+    `Would highly recommend ${mentionsName ? 'them' : name} at ${clinicName} for ${service}.`,
+    `If you need ${service}, ${mentionsName ? "they're" : name + ' is'} the one to see at ${clinicName}${loc ? ' in ' + loc : ''}.`,
+    `Truly grateful for the care ${mentionsName ? 'they' : name} gave me at ${clinicName}.`,
+    `Would go back to ${clinicName} again without a second thought.`,
+  ] : [];
+  const pool = (clinicName && r() < 0.4) ? closingsWithHospital : closings;
+  return `${text} ${pick(pool, r)}`;
 }
 
 // Fallback for patients who leave the box blank — a short (1-2 sentence),
@@ -162,6 +177,16 @@ function generateShortAutoReview(doctor, variant) {
     `Genuinely impressed with ${name}.`,
     `${name} made the whole process stress-free.`,
     `Grateful for the care I received from ${name}.`,
+    `Would definitely go back to ${name} for future visits.`,
+    `${name} listened patiently and addressed all my concerns.`,
+    `From start to finish, my visit with ${name} was smooth.`,
+    `${name} made me feel comfortable right from the first minute.`,
+    `Couldn't have asked for a better consultation with ${name}.`,
+    `${name} was thorough and took the time to explain things well.`,
+    `So relieved I chose ${name} for this.`,
+    `${name}'s approach put me at ease immediately.`,
+    `Honestly one of the smoothest visits I've had, thanks to ${name}.`,
+    `${name} was warm, attentive, and genuinely caring.`,
   ];
   const closers = [
     `Highly skilled with ${service}.`,
@@ -172,8 +197,25 @@ function generateShortAutoReview(doctor, variant) {
     `Professional, patient, and thorough.`,
     `Truly one of the best in ${loc}.`,
     `Handled my ${service} really well.`,
+    `Booking was easy and the wait time was minimal.`,
+    `Follow-up care was just as good as the consultation itself.`,
+    `Would send my own family here without hesitation.`,
+    `The whole experience felt personal, not rushed.`,
   ];
-  return `${pick(openers, r)} ${pick(closers, r)}`;
+  // Also mention the hospital ~4 in 10 times — same reasoning as
+  // addKeywordClosing() above: good for the hospital's own search
+  // visibility without every single review sounding identical.
+  const clinicName = doctor.clinic_name;
+  const closersWithHospital = clinicName ? [
+    `Highly skilled with ${service} at ${clinicName}.`,
+    `Great support for ${service} at ${clinicName}.`,
+    `Would recommend ${clinicName} for ${service}.`,
+    `One of the best ${role}s at ${clinicName}${loc ? ' in ' + loc : ''}.`,
+    `The whole experience at ${clinicName} felt personal, not rushed.`,
+    `Follow-up care at ${clinicName} was just as good as the consultation.`,
+  ] : [];
+  const closerPool = (clinicName && r() < 0.4) ? closersWithHospital : closers;
+  return `${pick(openers, r)} ${pick(closerPool, r)}`;
 }
 
 function Stars() {
