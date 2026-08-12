@@ -239,11 +239,30 @@ export default function DoctorReviewPage({ params }) {
     await logGeneratedReview('raw', text);
   };
 
+  // Tries real AI grammar/spelling correction (server route, only runs if
+  // ANTHROPIC_API_KEY is configured) — falls back to the rule-based
+  // polishReview() on any failure (key not set yet, network error, upstream
+  // error) so Polish never leaves the patient stuck.
+  const polishWithAI = async (rawText) => {
+    try {
+      const res = await fetch('/api/polish', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: rawText }),
+      });
+      if (!res.ok) throw new Error('polish api failed');
+      const data = await res.json();
+      if (!data.polished) throw new Error('empty polish response');
+      return data.polished;
+    } catch {
+      return polishReview(rawText);
+    }
+  };
+
   const handlePolish = async () => {
     if (!manualText.trim()) return;
     setPolishing(true);
-    await new Promise(r => setTimeout(r, 700));
-    const text = polishReview(manualText);
+    const text = await polishWithAI(manualText);
     setResultText(text);
     setResultType('polished');
     setPolishing(false);
