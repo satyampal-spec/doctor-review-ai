@@ -107,6 +107,35 @@ function polishReview(rawText) {
   return text;
 }
 
+// Adds ONE keyword-rich closing sentence on top of the patient's own
+// (grammar-fixed) text — Polish is now "what they typed, plus this",
+// not a replacement. Deliberately avoids surgery-specific service phrases
+// unless the patient's own text actually mentions surgery/an operation —
+// most patients of any given doctor (including surgeons) are OPD/
+// consultation visits, not surgical ones, so defaulting to "gallbladder
+// and hernia surgery" for someone who never mentioned surgery reads wrong.
+function addKeywordClosing(text, doctor, variant) {
+  if (!text) return '';
+  const r = seeded(variant ?? 0);
+  const { roles, services } = specialtyPhrases(doctor.specialization);
+  const role = pick(roles, r);
+  const mentionsSurgery = /surger|operat/i.test(text);
+  const eligibleServices = mentionsSurgery ? services : services.filter(s => !/surger|operat/i.test(s));
+  const service = pick(eligibleServices.length ? eligibleServices : ['consultation and treatment'], r);
+  const loc = displayLoc(doctor.location, r);
+  const name = doctor.doctor_name || 'the doctor';
+  const firstName = (name.split(' ').find(w => w.length > 3) || '').toLowerCase();
+  const mentionsName = firstName && text.toLowerCase().includes(firstName);
+  const subject = mentionsName ? 'They' : name;
+  const closings = [
+    `${subject} ${mentionsName ? 'are' : 'is'} genuinely one of the best ${role}s I've been to${loc ? ' in ' + loc : ''}.`,
+    `Would highly recommend ${mentionsName ? 'them' : name} for ${service}.`,
+    `If you need ${service}, ${mentionsName ? "they're" : name + ' is'} the one to see${loc ? ' in ' + loc : ''}.`,
+    `Truly grateful — ${mentionsName ? 'they' : name} made ${service} so much easier than I expected.`,
+  ];
+  return `${text} ${pick(closings, r)}`;
+}
+
 // Fallback for patients who leave the box blank — a short (1-2 sentence),
 // fully-templated review built from the doctor's specialty + location.
 // Combinatorial space (openers × closers × role/service/location variants)
@@ -177,6 +206,9 @@ export default function DoctorReviewPage({ params }) {
   const [variant, setVariant] = useState(() => Math.floor(Math.random() * 1e9));
   const [copied, setCopied] = useState('');
   const [generatedReviewId, setGeneratedReviewId] = useState(null);
+  // Grammar-fixed base text, cached so "Generate Different Version" can
+  // re-roll just the keyword closing without re-calling the grammar API.
+  const [grammarFixedText, setGrammarFixedText] = useState('');
 
   const GOOGLE_REVIEW_URL = doctor?.google_profile_url || 'https://share.google/iBPK7TfzoXQ9Hi94J';
 
@@ -264,10 +296,15 @@ export default function DoctorReviewPage({ params }) {
     }
   };
 
+  // Polish = grammar-fix the patient's own words, THEN add one keyword
+  // closing on top — "what they typed, plus this", not a replacement.
   const handlePolish = async () => {
     if (!manualText.trim()) return;
     setPolishing(true);
-    const text = await polishWithAI(manualText);
+    const fixed = await polishWithAI(manualText);
+    setGrammarFixedText(fixed);
+    const text = addKeywordClosing(fixed, doctor, variant);
+    setVariant(v => v + 1);
     setResultText(text);
     setResultType('polished');
     setPolishing(false);
@@ -276,8 +313,9 @@ export default function DoctorReviewPage({ params }) {
     await logGeneratedReview('polished', text);
   };
 
-  const handleAutoNext = async () => {
-    if (manualText.trim()) return; // only the blank-box fallback
+  // Explicit, always-available option (not just a blank-box fallback) —
+  // fully templated from the doctor's specialty, ignores whatever's typed.
+  const handleAutoGenerate = async () => {
     setAutoing(true);
     await new Promise(r => setTimeout(r, 600));
     const text = await generateUniqueAutoReview();
@@ -289,13 +327,20 @@ export default function DoctorReviewPage({ params }) {
     await logGeneratedReview('auto', text);
   };
 
-  // Only meaningful for 'auto' — 'polished' and 'raw' are both deterministic
-  // functions of exactly what the patient typed, so there's nothing to reroll.
+  // 'raw' is a deterministic function of exactly what the patient typed —
+  // nothing to reroll there. 'polished' rerolls just the keyword closing
+  // (cheap, no re-call to the grammar API); 'auto' rerolls the whole thing.
   const regenerate = async () => {
-    if (resultType !== 'auto') return;
-    const text = await generateUniqueAutoReview();
-    setResultText(text);
-    await logGeneratedReview('auto', text);
+    if (resultType === 'polished') {
+      const text = addKeywordClosing(grammarFixedText, doctor, variant);
+      setVariant(v => v + 1);
+      setResultText(text);
+      await logGeneratedReview('polished', text);
+    } else if (resultType === 'auto') {
+      const text = await generateUniqueAutoReview();
+      setResultText(text);
+      await logGeneratedReview('auto', text);
+    }
   };
 
   const copyAndOpen = async () => {
@@ -369,30 +414,32 @@ export default function DoctorReviewPage({ params }) {
             />
             <p style={{ fontSize: 12, color: '#94a3b8', margin: '6px 0 20px', textAlign: 'right' }}>{manualText.length} characters</p>
 
-            {manualText.trim() ? (
-              <>
-                <button onClick={handleKeepRaw} disabled={keeping || polishing}
-                  style={{ width: '100%', padding: '16px', borderRadius: 14, background: THEME.gradient, color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
-                  {keeping ? (
-                    <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Preparing...</>
-                  ) : 'Keep It As I Wrote It'}
-                </button>
+            <button onClick={handleKeepRaw} disabled={!manualText.trim() || keeping || polishing || autoing}
+              style={{ width: '100%', padding: '16px', borderRadius: 14, background: manualText.trim() ? THEME.gradient : '#e2e8f0', color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: manualText.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
+              {keeping ? (
+                <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Preparing...</>
+              ) : 'Keep It As I Wrote It'}
+            </button>
 
-                <button onClick={handlePolish} disabled={keeping || polishing}
-                  style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'transparent', color: THEME.dark, border: `2px solid ${THEME.primary}`, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                  {polishing ? (
-                    <><div style={{ width: 18, height: 18, border: `3px solid ${THEME.ring}`, borderTopColor: THEME.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Polishing...</>
-                  ) : '✨ Polish My Review'}
-                </button>
-              </>
-            ) : (
-              <button onClick={handleAutoNext} disabled={autoing}
-                style={{ width: '100%', padding: '16px', borderRadius: 14, background: THEME.gradient, color: '#fff', border: 'none', fontWeight: 800, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                {autoing ? (
-                  <><div style={{ width: 18, height: 18, border: '3px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Preparing...</>
-                ) : 'Next →'}
-              </button>
-            )}
+            <button onClick={handlePolish} disabled={!manualText.trim() || keeping || polishing || autoing}
+              style={{ width: '100%', padding: '14px', borderRadius: 14, background: 'transparent', color: manualText.trim() ? THEME.dark : '#94a3b8', border: `2px solid ${manualText.trim() ? THEME.primary : '#e2e8f0'}`, fontWeight: 700, fontSize: 14, cursor: manualText.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
+              {polishing ? (
+                <><div style={{ width: 18, height: 18, border: `3px solid ${THEME.ring}`, borderTopColor: THEME.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Polishing...</>
+              ) : '✨ Polish My Review'}
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 16px' }}>
+              <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+              <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>OR</span>
+              <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+            </div>
+
+            <button onClick={handleAutoGenerate} disabled={autoing || keeping || polishing}
+              style={{ width: '100%', padding: '14px', borderRadius: 14, background: '#fafafa', color: '#374151', border: '2px solid #e2e8f0', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              {autoing ? (
+                <><div style={{ width: 18, height: 18, border: '3px solid rgba(0,0,0,0.1)', borderTopColor: THEME.primary, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Generating...</>
+              ) : '🎯 Auto-Generate Review'}
+            </button>
           </div>
         )}
 
@@ -423,7 +470,7 @@ export default function DoctorReviewPage({ params }) {
               </button>
             </div>
 
-            {resultType === 'auto' && (
+            {(resultType === 'polished' || resultType === 'auto') && (
               <button onClick={regenerate}
                 style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'transparent', color: '#64748b', border: '2px solid #e2e8f0', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginBottom: 10 }}>
                 🔄 Generate Different Version
