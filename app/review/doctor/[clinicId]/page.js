@@ -57,6 +57,8 @@ const SPECIALTY_PHRASES = [
   { test: /gastro/i, roles: ['gastroenterologist'], services: ['endoscopy and gastro consultations', 'stomach and digestive issues', 'liver and digestive health'] },
   { test: /physio/i, roles: ['physiotherapist'], services: ['back pain and knee pain treatment', 'sports injury rehab', 'post-surgery physiotherapy'] },
   { test: /dietit|nutrition/i, roles: ['dietitian', 'nutritionist'], services: ['weight loss and diet planning', 'personalized nutrition plans', 'diet consultations'] },
+  { test: /dermatolog|derma\b/i, roles: ['dermatologist', 'skin specialist'], services: ['acne and skin treatment', 'hair fall and hair care', 'skin allergies and rashes', 'skin and hair consultations'] },
+  { test: /psychiatr/i, roles: ['psychiatrist'], services: ['anxiety and stress management', 'mental health consultations', 'depression and anxiety care', 'counseling and therapy'] },
 ];
 
 function specialtyPhrases(specialization) {
