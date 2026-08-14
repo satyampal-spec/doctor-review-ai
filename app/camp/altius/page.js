@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 
-// ── Altius theme (same palette as app/review/hospital/[shopId]/page.js) ──
-const GOOGLE_COLORS = { blue: '#4285F4', red: '#EA4335', yellow: '#FBBC05', green: '#34A853' };
+// ── Altius real brand theme (sampled from altiushospital.com) ──
+// orange accent: rgb(255,134,48) · navy: rgb(13,50,118)
 const THEME = {
-  primary:  GOOGLE_COLORS.blue,
-  dark:     '#1a73e8',
-  gradient: `linear-gradient(135deg, ${GOOGLE_COLORS.blue} 0%, #1a73e8 100%)`,
-  light:    '#e8f0fe',
-  ring:     '#aecbfa',
-  accents:  [GOOGLE_COLORS.blue, GOOGLE_COLORS.red, GOOGLE_COLORS.yellow, GOOGLE_COLORS.green],
+  primary:  '#FF8630',
+  dark:     '#C5591A',
+  navy:     '#0D3276',
+  gradient: 'linear-gradient(135deg, #FF8630 0%, #F2600C 100%)',
+  light:    '#FFF1E6',
+  ring:     '#FFD3AD',
 };
 
 // ── TODO: fill these in once the Google Form is created ──
@@ -28,7 +28,6 @@ const GOOGLE_FORM_ACTION = `https://docs.google.com/forms/d/e/${GOOGLE_FORM_ID}/
 
 // ── TODO: confirm the offer copy ──
 const OFFER_TITLE = 'Claim It, Hurry!';
-const OFFER_SUBTITLE = 'Free Health Checkup — Today Only';
 
 export default function AltiusCampPage() {
   const [name, setName] = useState('');
@@ -79,28 +78,22 @@ export default function AltiusCampPage() {
         <div style={{ position: 'absolute', top: -30, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'rgba(255,255,255,0.12)' }} />
         <div style={{ position: 'absolute', bottom: -50, left: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
         <div style={{ position: 'relative', maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.18)', padding: '6px 14px', borderRadius: 999, marginBottom: 14 }}>
-            {THEME.accents.map((c, i) => (
-              <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />
-            ))}
-            <span style={{ color: '#fff', fontSize: 12, fontWeight: 700, letterSpacing: 0.4, marginLeft: 4 }}>ALTIUS MULTI-SPECIALITY HOSPITAL</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', background: '#fff', padding: '10px 22px', borderRadius: 16, marginBottom: 18, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+            <img src="/camp/altius-logo.webp" alt="Altius Hospitals" style={{ height: 40, display: 'block' }} />
           </div>
-          <div style={{ fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1.15, marginBottom: 8, textShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+          <div style={{ fontSize: 34, fontWeight: 900, color: '#fff', lineHeight: 1.15, textShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
             🎉 {OFFER_TITLE}
-          </div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.95)' }}>
-            {OFFER_SUBTITLE}
           </div>
         </div>
       </div>
 
       {/* Card */}
       <div style={{ flex: 1, padding: '0 20px', marginTop: -24 }}>
-        <div style={{ maxWidth: 480, margin: '0 auto', background: '#fff', borderRadius: 20, boxShadow: '0 12px 40px rgba(26,115,232,0.15)', padding: 26 }}>
+        <div style={{ maxWidth: 480, margin: '0 auto', background: '#fff', borderRadius: 20, boxShadow: '0 12px 40px rgba(242,96,12,0.18)', padding: 26 }}>
           {!submitted ? (
             <>
               <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: THEME.dark, marginBottom: 4 }}>⏳ Limited slots for today</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: THEME.navy, marginBottom: 4 }}>⏳ Limited slots for today</div>
                 <div style={{ fontSize: 13, color: '#64748b' }}>Leave your details and our team will call you right back</div>
               </div>
 
@@ -134,7 +127,7 @@ export default function AltiusCampPage() {
                     background: canSubmit ? THEME.gradient : '#e2e8f0',
                     color: '#fff', fontWeight: 800, fontSize: 16,
                     cursor: canSubmit ? 'pointer' : 'not-allowed',
-                    boxShadow: canSubmit ? '0 8px 20px rgba(66,133,244,0.35)' : 'none',
+                    boxShadow: canSubmit ? '0 8px 20px rgba(242,96,12,0.35)' : 'none',
                   }}
                 >
                   {submitting ? 'Submitting…' : 'Claim My Spot →'}
@@ -144,7 +137,7 @@ export default function AltiusCampPage() {
           ) : (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
               <div style={{ fontSize: 46, marginBottom: 10 }}>🎉</div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: THEME.dark, marginBottom: 8 }}>You're In!</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: THEME.navy, marginBottom: 8 }}>You're In!</div>
               <div style={{ fontSize: 14, color: '#64748b' }}>
                 Our team will call <b>{name}</b> shortly at <b>{phone}</b>.
               </div>
